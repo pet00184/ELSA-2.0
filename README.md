@@ -1,4 +1,4 @@
-# flarepred
+# ELSA/ANNA 2.0
 Repository for the Early Large Solar flare Alert (ELSA) and ANother Near-realtime Alert (ANNA) systems that were used in the April 2024 FOXSI-4 and HI-C lauches.
 
 ELSA and ANNA will be used in the Winter 2025/2026 FOXSI-5 launch!
