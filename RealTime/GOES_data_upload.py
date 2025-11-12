@@ -6,6 +6,7 @@ import xarray as xr
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from siphon.catalog import TDSCatalog
+import time
 
 # def get_new_data(cat_url, out_dir, n_files=30, max_workers=4):
 #     cat = TDSCatalog(cat_url)
@@ -77,8 +78,8 @@ def make_irradiance(ifn, median=True):
 
 from concurrent.futures import ProcessPoolExecutor
 
-def process_irradiance_all_files(out_dir, max_workers=4):
-    ifns = sorted(glob.glob(os.path.join(out_dir, "OR_EXIS*.nc")))
+def process_irradiance_all_files(ifns, max_workers=4):
+    #ifns = sorted(glob.glob(os.path.join(out_dir, "OR_EXIS*.nc")))
     if not ifns:
         raise FileNotFoundError("where are the files??? did you remember to download them?")
 
@@ -148,12 +149,23 @@ def load_new_realtime_XRS(nfiles=5, median=True, max_workers=4, initial=False):
         # Download new or missing files
         get_new_data(cat_url, out_dir, start_from_end=-nfiles, max_workers=max_workers)
 
-        # Process all files in cache
-        goes_current = process_irradiance_all_files(out_dir, max_workers=max_workers)
+        # Select which files to process
+        all_files = sorted(glob.glob(os.path.join(out_dir, "*.nc")))
 
-        # Keep cache from growing indefinitely
-        if len(glob.glob(os.path.join(out_dir, "*.nc"))) > 720:  # ~6 hours
-            oldest = sorted(glob.glob(os.path.join(out_dir, "*.nc")))[:-720]
+        if not all_files:
+            raise FileNotFoundError("No GOES .nc files found in cache.")
+
+        # I only want to give the last 5 files if not the inital download to goes_current
+        if initial:
+            files_to_process = all_files
+        else:
+            files_to_process = all_files[-nfiles:]
+
+        goes_current = process_irradiance_all_files(files_to_process, max_workers=max_workers)
+
+        # Only hold onto the last ~2 hours of data
+        if len(all_files) > 240:
+            oldest = all_files[:-240]
             for f in oldest:
                 os.remove(f)
 
@@ -161,4 +173,5 @@ def load_new_realtime_XRS(nfiles=5, median=True, max_workers=4, initial=False):
 
     except Exception as e:
         print(f"GOES download error:\n{e}")
+        time.sleep(5)
         return load_new_realtime_XRS(nfiles=nfiles, median=median, max_workers=max_workers)

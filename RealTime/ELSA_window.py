@@ -326,10 +326,14 @@ if __name__=="__main__":
     
     window.show()
     app.exec()
+    #removing leftover files
     for filename in glob.glob('flaretest*'):
         os.remove(filename)
     for filename in glob.glob('LATEST_EVE*'):
         os.remove(filename)
+    for f in glob.glob(os.path.join('goes_cache', "*.nc")):
+        os.remove(f)
+    #doing post analysis
     if (len(sys.argv)==2) and (sys.argv[1]=="test_trigger"):
         post_analysis(_utc_folder, test_trigger=True)
     else:
