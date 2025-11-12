@@ -7,7 +7,7 @@ import GOES_data_upload as GOES_data
 import EOVSA_data_upload as EOVSA_data
 import EVE_data_upload as EVE_data
 import post_analysis as pa
-from run_realtime_algorithm import post_analysis, utc_time_folder
+#from run_realtime_algorithm import post_analysis, utc_time_folder
 from QTimeWidget import QTimeWidget
 from QStatusWidget import QStatusWidget
 from QAlertsWidget import QAlertsWidget
@@ -17,14 +17,11 @@ from QButtonsInteractions import QButtonsWidget
 import os
 import glob
 import atexit
-
-_utc_folder = utc_time_folder() #automated folders based on time
+import post_analysis as pa
+import datetime
 
 class main_window(QtWidgets.QWidget):
-    """ Designed to be the main window for the flare prediction GUI.
-
-    This brings together the GOES plotting (historical or real time), the time display, and 
-    start and stop plotting buttons. 
+    """ Designed to be the main window for the ELSA 2.0 GUI.
 
     Parameters
     ----------
@@ -60,7 +57,7 @@ class main_window(QtWidgets.QWidget):
         self.no_eve=no_eve #defining if we are including EVE or not for rft
         self.sound_file = sound_file #defining what sound we want to use
 
-        self.setWindowTitle("ELSA")
+        self.setWindowTitle("ELSA 2.0")
         self.setStyleSheet("border-width: 2px; border-style: outset; border-radius: 10px; border-color: white; background-color: white;")
         self.setMinimumSize(600,400)
 
@@ -74,7 +71,7 @@ class main_window(QtWidgets.QWidget):
 
         self.panels = dict()
         
-        # widget for displaying the automated recommendation
+        # widget for displaying the STATUS box
         self._status_layout = self.layout_bkg(main_layout=status_layout, 
                                          panel_name="panel_status", 
                                          style_sheet_string=self._layout_style("grey", "white"))
@@ -134,24 +131,11 @@ class main_window(QtWidgets.QWidget):
         status_values_and_led_layout.addLayout(datad_layout,0,2, alignment=QtCore.Qt.AlignmentFlag.AlignLeft)#-y, x
         status_values_and_led_layout.addLayout(led_layout,0,3,1,1, alignment=QtCore.Qt.AlignmentFlag.AlignRight)#-y, x, 1 row, 1 columns
 
-        # combine the button/radio and time layouts
-        # buttons_layout = QtWidgets.QGridLayout()
-        # buttons_layout.addLayout(buttons_layout,0,0,1,2)#-y, x, 1 row, 2 columns
-        # buttons_and_time_layout.addLayout(time_layout,0,2,1,1)
-        # br_and_time_layout.setColumnStretch(0,2)
-        # buttons_and_time_layout.setColumnStretch(1,1)
-
         # now all together
         global_layout = QtWidgets.QGridLayout()
         global_layout.addLayout(plot_layout,0, 0, 12, 4)
         global_layout.addLayout(time_layout,12, 0, 1, 4)
         global_layout.addLayout(status_values_and_led_layout,13, 0, 1, 4)
-        # global_layout.addLayout(buttons_layout,11, 0, 1, 4)
-
-        # make sure the status and led stretch to the same width as the plot
-        # status_values_and_led_layout.setColumnStretch(0,2)
-        # status_values_and_led_layout.setColumnStretch(1,2)
-        # status_values_and_led_layout.setColumnStretch(2,1)
 
         # actually display the layout
         self.setLayout(global_layout)
@@ -161,9 +145,9 @@ class main_window(QtWidgets.QWidget):
     def data_source(self, no_eve=False):
         """ Return GOES and EVE realtime data sources. """
         if no_eve:
-            return GOES_data.load_realtime_XRS, None
+            return GOES_data.load_new_realtime_XRS, None
         else:
-            return GOES_data.load_realtime_XRS, EVE_data.load_realtime_EVE
+            return GOES_data.load_new_realtime_XRS, EVE_data.load_realtime_EVE
     
     def layout_bkg(self, main_layout, panel_name, style_sheet_string, grid=False):
             """ Adds a background widget (panel) to a main layout so border, colours, etc. can be controlled. """
@@ -228,20 +212,6 @@ class main_window(QtWidgets.QWidget):
                     
         if hasattr(self,"dlg"):
             self.dlg.close()
-    
-    
-class main_window_historical(main_window):
-    """ 
-    Exactly the same as `main_window` but source historical data 
-    instead of realtime data. 
-    """
-    def __init__(self):
-        main_window.__init__(self)
-        self.setWindowTitle("FlarePred 3000 : Historical Data")
-    
-    def data_source(self):
-        """ Return the historical data source. """
-        return GOES_data.FakeDataUpdator(GOES_data.historical_GOES_XRS).append_new_data
 
 class PopUpAlertsDialog(QtWidgets.QDialog):
     """
@@ -316,18 +286,28 @@ def unifrom_layout_stretch(layout, grid=False):
             layout.setStretch(w, 1)
         layout.addStretch()
         
+def post_analysis(foldername, test_trigger):
+    pra = pa.PostRunAnalysis(foldername, test_trigger)
+    pra.sort_summary()
+    pra.do_launch_analysis()
+    pra.do_hold_analysis()
+    pra.do_triggers_only_analysis()
+    pra.write_text_summary()
     
+def utc_time_folder():
+    datetime_str_format = "%Y%m%d_%H-%M-%S"
+    utc_str = datetime.datetime.now(datetime.timezone.utc).strftime(datetime_str_format)
+    return utc_str
+    
+_utc_folder = utc_time_folder() #automated folders based on time
 
 if __name__=="__main__":
     import sys
 
     sound_file = os.path.dirname(__file__) + '/'
     app = QtWidgets.QApplication([])
-    if (len(sys.argv)==2) and (sys.argv[1]=="historical"):
-        print("In HISTORICAL mode!")
-        sound_file += "alert.wav"
-        window = main_window_historical(sound_file, no_eve=True)
-    elif (len(sys.argv)==2) and (sys.argv[1]=="office_mode"):
+
+    if (len(sys.argv)==2) and (sys.argv[1]=="office_mode"):
         print("In REALTIME mode! **The Office mode**")
         sound_file += "office.wav"
         window = main_window(sound_file, no_eve=False)
@@ -336,7 +316,7 @@ if __name__=="__main__":
         sound_file += "alert.wav"
         window = main_window(sound_file, no_eve=True)
     elif (len(sys.argv)==2) and (sys.argv[1]=="test_trigger"):
-        print("In REALTIME mode!")
+        print("In REALTIME mode! Using the test trigger")
         sound_file += "alert.wav"
         window = main_window(sound_file, no_eve=False, test_trigger=True)
     else:

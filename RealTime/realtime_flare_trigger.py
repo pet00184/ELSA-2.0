@@ -27,7 +27,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
     LAUNCH_TO_HIC_OBS_END = LAUNCH_TO_HIC_OBS_START + 6
     DEADTIME = 30
     
-    mm_a = 7.288781677851528e-09; cc_a = -4.698588594426906e-06 #used for goes proxy
+    ##mm_a = 7.288781677851528e-09; cc_a = -4.698588594426906e-06 #used for goes proxy
     
     # need to be class variable to connect
     value_changed_signal_status = QtCore.pyqtSignal()
@@ -36,15 +36,10 @@ class RealTimeTrigger(QtWidgets.QWidget):
 
     def __init__(self, goes_data, eve_data, foldername, sound_filename, no_eve, test_trigger=False, parent=None):
         QtWidgets.QWidget.__init__(self,parent)
-        
-        #making folder to store summary data:
-        # if not os.path.exists(f"{PACKAGE_DIR/SessionSummaries}"):
-#             os.mkdir(f"{PACKAGE_DIR/SessionSummaries}")
             
         if not os.path.exists(os.path.join(PACKAGE_DIR, "SessionSummaries", foldername)):
             os.makedirs(os.path.join(PACKAGE_DIR, "SessionSummaries", foldername))
-        
-        #defining if we are including EOVSA data or not:   
+         
         self.no_eve = no_eve
         #defining data:
         self.XRS_data = goes_data
@@ -69,7 +64,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.trigger_sound_effect.setSource(QUrl.fromLocalFile(self.sound_filename))
         self.trigger_sound_effect.setLoopCount(1)
         
-        
+        #setting up the flare summary data to be saved after each run
         self.flare_summary = pd.DataFrame(columns=['Trigger','Realtime Trigger', 'Countdown Initiated', 'Hold', 'Launch', 'HiC Launch', 'Flare End', 'FOXSI Obs Start', 'FOXSI Obs End', 'HiC Obs Start', 'HiC Obs End'])
         self.flare_summary_index = -1
         self.fai_summary = pd.DataFrame(columns=['Flare_Index', 'FAI_Time'])
@@ -77,11 +72,11 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.FAI_loc = 0
         
         #initial loading of the data: 
-        self.load_data(reload=False)
+        self.load_data(reload=False, initial=True)
         if self.no_eve==False:
             self.load_eve_data(reload=False)
             
-        self.find_goes_proxy()
+        ##self.find_goes_proxy()
         
         #initial plotting of data: 
         #initializing plot: 
@@ -192,7 +187,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
             
         #PLOTTING GOES
         #goes proxy from eve:
-        self.goes_proxy = self.proxyplot(self.evetime_tags, np.array(self.eve['ESP_0_7_COUNTS'])*self.proxy_ratio, color='salmon', plotname='GOES PROXY')
+        #self.goes_proxy = self.proxyplot(self.evetime_tags, np.array(self.eve['ESP_0_7_COUNTS'])*self.proxy_ratio, color='salmon', plotname='GOES PROXY')
         
         self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes['time_tag']]
         self.xrsb_data = self.plot(self.time_tags, np.array(self.goes['xrsb']), color='r', plotname='GOES XRSB')
@@ -437,10 +432,10 @@ class RealTimeTrigger(QtWidgets.QWidget):
             return log
         return array
         
-    def find_goes_proxy(self):
-        goes_ave = np.median(self.goes_current['xrsb'])
-        eve_ave = np.median(self.eve_current['ESP_0_7_COUNTS'])
-        self.proxy_ratio = goes_ave/eve_ave
+    # def find_goes_proxy(self):
+    #     goes_ave = np.median(self.goes_current['xrsb'])
+    #     eve_ave = np.median(self.eve_current['ESP_0_7_COUNTS'])
+    #     self.proxy_ratio = goes_ave/eve_ave
 
     def flare_prediction_state(self, state):
         self._flare_prediction_state = state
@@ -471,9 +466,9 @@ class RealTimeTrigger(QtWidgets.QWidget):
         pen = pg.mkPen(color=color, width=5)
         return self.graphWidget.plot(x, self._log_data(y), name=plotname, pen=pen, symbol="o", symbolSize=3)
         
-    def proxyplot(self, x, y, color, plotname):
-        pen = pg.mkPen(color=color, width=3)
-        return self.graphWidget.plot(x, self._log_data(y), name=plotname, pen=pen)
+    # def proxyplot(self, x, y, color, plotname):
+    #     pen = pg.mkPen(color=color, width=3)
+    #     return self.graphWidget.plot(x, self._log_data(y), name=plotname, pen=pen)
         
     def tempplot(self, x, y, color, plotname):
         pen = pg.mkPen(color=color, width=5)
@@ -487,15 +482,35 @@ class RealTimeTrigger(QtWidgets.QWidget):
         pen = pg.mkPen(color=color, width=5)
         return self.evegraph0.plot(x, y, name=plotname, pen=pen)
        
-    def load_data(self, reload=True):
-        if self.print_updates: print('Loading Data')
-        self.goes_current = self.XRS_data()
-        self.current_time = list(self.goes_current['time_tag'])[-1]
-        self.current_realtime = self._get_datetime_now()# self.current_time + pd.Timedelta(3, unit='minutes') #to account for latency
+    # def load_data(self, reload=True):
+    #     if self.print_updates: print('Loading Data')
+    #     self.goes_current = self.XRS_data(initial=True)
+    #     self.current_time = list(self.goes_current['time_tag'])[-1]
+    #     self.current_realtime = self._get_datetime_now()# self.current_time + pd.Timedelta(3, unit='minutes') #to account for latency
+    #     if not reload:
+    #         self.goes = self.goes_current
+    #         self.calculate_param_arrays(0, new=False)
+    #         self.check_for_FAI(0, new=False)
+
+    def load_data(self, reload=True, initial=False):
+        # if self.print_updates:
+        #     print("Loading GOES Data...")
+
+        # Pass the flag through
+        self.goes_current = self.XRS_data(initial=initial)
+
+        self.current_time = list(self.goes_current["time_tag"])[-1]
+        self.current_realtime = self._get_datetime_now()
+
         if not reload:
+            # First-time setup
             self.goes = self.goes_current
             self.calculate_param_arrays(0, new=False)
             self.check_for_FAI(0, new=False)
+        # else:
+        #     # Later updates
+        #     self.append_new_data()
+
     
     def load_eve_data(self, reload=True):
         self.eve_current = self.EVE_data()
@@ -535,10 +550,11 @@ class RealTimeTrigger(QtWidgets.QWidget):
         differences_to_calculate = [3, 5]
         if not new:
             for diff in differences_to_calculate:
+                steps = diff*2 #to deal with the 30 second cadence instead of 1 minute!!
                 for xrs in ['xrsa', 'xrsb']:
                     xrsdiff = np.array(self.goes[xrs])
-                    xrsdiff = xrsdiff[diff:] - xrsdiff[:-diff]
-                    xrsdiff_final = np.concatenate([np.full(diff, math.nan), xrsdiff]) #appending correct # of 0's to front
+                    xrsdiff = xrsdiff[steps:] - xrsdiff[:-steps]
+                    xrsdiff_final = np.concatenate([np.full(steps, np.nan), xrsdiff]) #appending correct # of 0's to front
                     self.goes[f'{diff}min{xrs}diff'] = xrsdiff_final
             #calculating em and temp here:
             em, temp = emission_measure.compute_goes_emission_measure(self.goes['xrsa'], self.goes['xrsb'], self.goes['satellite'])
@@ -554,8 +570,9 @@ class RealTimeTrigger(QtWidgets.QWidget):
                 new_point = -(added_points-i)
                 #calculating 3-min difference is here:
                 for diff in differences_to_calculate:
+                    steps = diff*2 # for switching from 1 minute cadence to 30 second cadence
                     for xrs in ['xrsa', 'xrsb']:
-                        self.goes.iloc[new_point, self.goes.columns.get_loc(f'{diff}min{xrs}diff')] = self.goes.iloc[new_point, self.goes.columns.get_loc(xrs)] - self.goes.iloc[new_point - diff, self.goes.columns.get_loc(xrs)]
+                        self.goes.iloc[new_point, self.goes.columns.get_loc(f'{diff}min{xrs}diff')] = self.goes.iloc[new_point, self.goes.columns.get_loc(xrs)] - self.goes.iloc[new_point - steps, self.goes.columns.get_loc(xrs)]
                 #calculating em and temp is here:
                 em, temp = emission_measure.compute_goes_emission_measure(self.goes['xrsa'].iloc[new_point], self.goes['xrsb'].iloc[new_point], self.goes['satellite'].iloc[new_point])
                 em_loc = self.goes.columns.get_loc('emission measure')
@@ -728,7 +745,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
                 self.update_eve_FAI()
                 self.update_eve_trigger_plots()
                 self.update_eve_launch_plots()
-                self.proxy_plot_update()
+                #self.proxy_plot_update()
         if self.no_eve==True:
             self.no_eve_plot_update()
         self.check_for_new_data()
@@ -805,16 +822,16 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.display_eve0()
         self.eve0_data.setData(self.new_eve_time_tags, self.new_eve0)
         
-    def proxy_plot_update(self):
-        self.find_goes_proxy()
-        if self._logy:
-            self.new_proxy = self._log_data(np.array(self.eve['ESP_0_7_COUNTS'])*self.proxy_ratio)
-        else:
-            self.new_proxy = np.array(self.eve['ESP_0_7_COUNTS'])*self.proxy_ratio
-        if hasattr(self, "new_eve_data"):
-            self.goes_proxy.setData(self.new_eve_time_tags, self.new_proxy)
-        else:
-            self.goes_proxy.setData(self.evetime_tags, self.new_proxy)
+    # def proxy_plot_update(self):
+    #     self.find_goes_proxy()
+    #     if self._logy:
+    #         self.new_proxy = self._log_data(np.array(self.eve['ESP_0_7_COUNTS'])*self.proxy_ratio)
+    #     else:
+    #         self.new_proxy = np.array(self.eve['ESP_0_7_COUNTS'])*self.proxy_ratio
+    #     if hasattr(self, "new_eve_data"):
+    #         self.goes_proxy.setData(self.new_eve_time_tags, self.new_proxy)
+    #     else:
+    #         self.goes_proxy.setData(self.evetime_tags, self.new_proxy)
         
     def no_eve_plot_update(self):
         new_xloc = pd.Timestamp(self._get_datetime_now()-timedelta(minutes=15)).timestamp()
