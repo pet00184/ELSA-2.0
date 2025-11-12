@@ -60,9 +60,10 @@ def flare_end_condition(goes_data):
 #                    'Emission Measure>2e48 cm<sup>-3</sup>':em_condition,
 #                    '3-minute XRSA Increase>5e-8 W/m<sup>2</sup>':xrsa_3mindiff_condition} #
 # #
-FLARE_ALERT_MAP = {'XRSB>5e-6 W/m<sup>2</sup>':xrsb_condition,
+FLARE_ALERT_MAP = {#'XRSB>5e-6 W/m<sup>2</sup>':xrsb_condition,
                    #'XRSA>4.5e-7W/m<sup>2</sup>': xrsa_condition,
-                   'dEM (3 min)>1e47cm<sup>-2</sup>': em3min_condition,
+                   #'dEM (3 min)>1e47cm<sup>-2</sup>': em3min_condition,
+                   'magic!!': magic_flare_trigger
                    } #
 
 FLARE_ALERT_MAP_NEW = {"XRSB>3e-6 W/m<sup>2</sup><br>5 minute countdown<br>Last XRSA must be increasing":xrsb_condition2,

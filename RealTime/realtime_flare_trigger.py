@@ -72,7 +72,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.FAI_loc = 0
         
         #initial loading of the data: 
-        self.load_data(reload=False)
+        self.load_data(reload=False, initial=True)
         if self.no_eve==False:
             self.load_eve_data(reload=False)
             
@@ -482,15 +482,35 @@ class RealTimeTrigger(QtWidgets.QWidget):
         pen = pg.mkPen(color=color, width=5)
         return self.evegraph0.plot(x, y, name=plotname, pen=pen)
        
-    def load_data(self, reload=True):
-        if self.print_updates: print('Loading Data')
-        self.goes_current = self.XRS_data()
-        self.current_time = list(self.goes_current['time_tag'])[-1]
-        self.current_realtime = self._get_datetime_now()# self.current_time + pd.Timedelta(3, unit='minutes') #to account for latency
+    # def load_data(self, reload=True):
+    #     if self.print_updates: print('Loading Data')
+    #     self.goes_current = self.XRS_data(initial=True)
+    #     self.current_time = list(self.goes_current['time_tag'])[-1]
+    #     self.current_realtime = self._get_datetime_now()# self.current_time + pd.Timedelta(3, unit='minutes') #to account for latency
+    #     if not reload:
+    #         self.goes = self.goes_current
+    #         self.calculate_param_arrays(0, new=False)
+    #         self.check_for_FAI(0, new=False)
+
+    def load_data(self, reload=True, initial=False):
+        # if self.print_updates:
+        #     print("Loading GOES Data...")
+
+        # Pass the flag through
+        self.goes_current = self.XRS_data(initial=initial)
+
+        self.current_time = list(self.goes_current["time_tag"])[-1]
+        self.current_realtime = self._get_datetime_now()
+
         if not reload:
+            # First-time setup
             self.goes = self.goes_current
             self.calculate_param_arrays(0, new=False)
             self.check_for_FAI(0, new=False)
+        # else:
+        #     # Later updates
+        #     self.append_new_data()
+
     
     def load_eve_data(self, reload=True):
         self.eve_current = self.EVE_data()
@@ -530,10 +550,11 @@ class RealTimeTrigger(QtWidgets.QWidget):
         differences_to_calculate = [3, 5]
         if not new:
             for diff in differences_to_calculate:
+                steps = diff*2 #to deal with the 30 second cadence instead of 1 minute!!
                 for xrs in ['xrsa', 'xrsb']:
                     xrsdiff = np.array(self.goes[xrs])
-                    xrsdiff = xrsdiff[diff:] - xrsdiff[:-diff]
-                    xrsdiff_final = np.concatenate([np.full(diff, math.nan), xrsdiff]) #appending correct # of 0's to front
+                    xrsdiff = xrsdiff[steps:] - xrsdiff[:-steps]
+                    xrsdiff_final = np.concatenate([np.full(steps, np.nan), xrsdiff]) #appending correct # of 0's to front
                     self.goes[f'{diff}min{xrs}diff'] = xrsdiff_final
             #calculating em and temp here:
             em, temp = emission_measure.compute_goes_emission_measure(self.goes['xrsa'], self.goes['xrsb'], self.goes['satellite'])
@@ -549,8 +570,9 @@ class RealTimeTrigger(QtWidgets.QWidget):
                 new_point = -(added_points-i)
                 #calculating 3-min difference is here:
                 for diff in differences_to_calculate:
+                    steps = diff*2 # for switching from 1 minute cadence to 30 second cadence
                     for xrs in ['xrsa', 'xrsb']:
-                        self.goes.iloc[new_point, self.goes.columns.get_loc(f'{diff}min{xrs}diff')] = self.goes.iloc[new_point, self.goes.columns.get_loc(xrs)] - self.goes.iloc[new_point - diff, self.goes.columns.get_loc(xrs)]
+                        self.goes.iloc[new_point, self.goes.columns.get_loc(f'{diff}min{xrs}diff')] = self.goes.iloc[new_point, self.goes.columns.get_loc(xrs)] - self.goes.iloc[new_point - steps, self.goes.columns.get_loc(xrs)]
                 #calculating em and temp is here:
                 em, temp = emission_measure.compute_goes_emission_measure(self.goes['xrsa'].iloc[new_point], self.goes['xrsb'].iloc[new_point], self.goes['satellite'].iloc[new_point])
                 em_loc = self.goes.columns.get_loc('emission measure')

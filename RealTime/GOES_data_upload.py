@@ -7,21 +7,42 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from siphon.catalog import TDSCatalog
 
-def get_new_data(cat_url, out_dir, n_files=30, max_workers=4):
-    cat = TDSCatalog(cat_url)
+# def get_new_data(cat_url, out_dir, n_files=30, max_workers=4):
+#     cat = TDSCatalog(cat_url)
 
-    # taking the last 30 (or other) files!
-    ds_iter = (cat.datasets[i] for i in range(-n_files, 0))
+#     # taking the last 30 (or other) files!
+#     ds_iter = (cat.datasets[i] for i in range(-n_files, 0))
+
+#     def download(ds):
+#         url = ds.access_urls['HTTPServer']
+#         fname = os.path.join(out_dir, str(ds))
+#         urllib.request.urlretrieve(url, fname)
+#         return fname
+
+#     with ThreadPoolExecutor(max_workers=max_workers) as executor:
+#         for _ in executor.map(download, ds_iter):
+#             pass
+
+def get_new_data(cat_url, out_dir, start_from_end=-30, max_workers=4):
+    """Download the N most recent files (start_from_end is negative index)."""
+    cat = TDSCatalog(cat_url)
+    datasets = list(cat.datasets.values())
+
+    # Handle out-of-range gracefully
+    n_files = abs(start_from_end)
+    ds_iter = datasets[start_from_end:] if len(datasets) >= n_files else datasets
 
     def download(ds):
         url = ds.access_urls['HTTPServer']
         fname = os.path.join(out_dir, str(ds))
-        urllib.request.urlretrieve(url, fname)
+        if not os.path.exists(fname):  # Cache check
+            urllib.request.urlretrieve(url, fname)
         return fname
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for _ in executor.map(download, ds_iter):
             pass
+
 
 def make_irradiance(ifn, median=True):
     """I am putting a few of the steps together, so now I have the median (or mean) times being saved with the header I want for the dataframe, as well as just taking
@@ -71,32 +92,73 @@ def process_irradiance_all_files(out_dir, max_workers=4):
     return df
 
 
-def load_new_realtime_XRS(nfiles=5, median=True, max_workers=4):
+# def load_new_realtime_XRS(nfiles=15, median=True, max_workers=4):
 
-    try:
-        ### getting the goes data
-        base_cat_url = 'https://thredds-test.unidata.ucar.edu/thredds/catalog/satellite/{satellite}/{sat_pos}/{platform}/{dataset}/{product}/{date}/catalog.xml' 
+#     try:
+#         ### getting the goes data
+#         base_cat_url = 'https://thredds-test.unidata.ucar.edu/thredds/catalog/satellite/{satellite}/{sat_pos}/{platform}/{dataset}/{product}/{date}/catalog.xml' 
 
-        # Desired data (need to get G18 and G19 and combine in the end)
-        satellite = 'goes'
-        sat_pos = 'east' # "east" | "west"
-        platform = 'grb'
-        dataset = 'EXIS'
-        product = 'SFXR' # "SFXR" | "SFEU"
-        date = 'current'
+#         # Desired data (need to get G18 and G19 and combine in the end)
+#         satellite = 'goes'
+#         sat_pos = 'east' # "east" | "west"
+#         platform = 'grb'
+#         dataset = 'EXIS'
+#         product = 'SFXR' # "SFXR" | "SFEU"
+#         date = 'current'
 
-        # Set data retrieval path
-        cat_url = base_cat_url.format(satellite = satellite, sat_pos=sat_pos, platform = platform, dataset = dataset, product=product,  date = date)
+#         # Set data retrieval path
+#         cat_url = base_cat_url.format(satellite = satellite, sat_pos=sat_pos, platform = platform, dataset = dataset, product=product,  date = date)
 
-        out_dir = os.getcwd()
+#         out_dir = os.getcwd()
         
-        # loading in the files
-        get_new_data(cat_url, out_dir, n_files=nfiles, max_workers=max_workers)
+#         # loading in the files
+#         get_new_data(cat_url, out_dir, n_files=nfiles, max_workers=max_workers)
+#         goes_current = process_irradiance_all_files(out_dir, max_workers=max_workers)
+#         for file_path in glob.glob(os.path.join(out_dir, "*.nc")):
+#             os.remove(file_path) #gotta get rid of all the .nc files before we try again
+#         return goes_current
+
+#     except Exception as e:
+#         print(f"Likely GOES download error from `wget`:\n{e}")
+#         return load_new_realtime_XRS()
+    
+def load_new_realtime_XRS(nfiles=5, median=True, max_workers=4, initial=False):
+    """
+    initial=True → do large download (~65 files)
+    otherwise → small incremental update (~5 files)
+    """
+    try:
+        base_cat_url = (
+            "https://thredds-test.unidata.ucar.edu/thredds/catalog/"
+            "satellite/{satellite}/{sat_pos}/{platform}/{dataset}/{product}/{date}/catalog.xml"
+        )
+
+        cat_url = base_cat_url.format(
+            satellite='goes', sat_pos='east', platform='grb',
+            dataset='EXIS', product='SFXR', date='current'
+        )
+        out_dir = os.path.join(os.getcwd(), "goes_cache")
+        os.makedirs(out_dir, exist_ok=True)
+
+        if initial:
+            nfiles = 65  # load ~30–35 minutes of history
+        else:
+            nfiles = nfiles  # refresh 4–5 most recent
+
+        # Download new or missing files
+        get_new_data(cat_url, out_dir, start_from_end=-nfiles, max_workers=max_workers)
+
+        # Process all files in cache
         goes_current = process_irradiance_all_files(out_dir, max_workers=max_workers)
-        for file_path in glob.glob(os.path.join(out_dir, "*.nc")):
-            os.remove(file_path) #gotta get rid of all the .nc files before we try again
+
+        # Keep cache from growing indefinitely
+        if len(glob.glob(os.path.join(out_dir, "*.nc"))) > 720:  # ~6 hours
+            oldest = sorted(glob.glob(os.path.join(out_dir, "*.nc")))[:-720]
+            for f in oldest:
+                os.remove(f)
+
         return goes_current
 
     except Exception as e:
-        print(f"Likely GOES download error from `wget`:\n{e}")
-        return load_new_realtime_XRS()
+        print(f"GOES download error:\n{e}")
+        return load_new_realtime_XRS(nfiles=nfiles, median=median, max_workers=max_workers)
