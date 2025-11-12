@@ -16,10 +16,12 @@ build/
 # specific run files
 RealTime/SessionSummaries/*
 RealTime/SessionSummaries_ANNAgui/*
+RealTime/goes_cache/*
 RealTime/xrays-6-hour.json
 RealTime/*.json
 xrays-6-hour.json
 *.tmp
+*.nc
 RealTime/flaretest_*
 flaretest_*
 goes-response-latest.fits
