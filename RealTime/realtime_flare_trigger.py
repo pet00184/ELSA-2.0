@@ -780,10 +780,10 @@ class RealTimeTrigger(QtWidgets.QWidget):
             
     def xrs_plot_update(self):
         
-        if self.goes.shape[0]>30:
-            self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes.iloc[-30:]['time_tag']]
-            self.new_xrsa = np.array(self.goes.iloc[-30:]['xrsa'])
-            self.new_xrsb = np.array(self.goes.iloc[-30:]['xrsb'])
+        if self.goes.shape[0]>60:
+            self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes.iloc[-60:]['time_tag']]
+            self.new_xrsa = np.array(self.goes.iloc[-60:]['xrsa'])
+            self.new_xrsb = np.array(self.goes.iloc[-60:]['xrsb'])
         else: 
             self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes['time_tag']]
             self.new_xrsa = np.array(self.goes['xrsa'])
@@ -794,9 +794,9 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.xrsb_data.setData(self.time_tags, self._log_data(self.new_xrsb))
         
     def temp_plot_update(self):
-        if self.goes.shape[0]>30:
-            self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes.iloc[-30:]['time_tag']]
-            self.new_temp = np.array(self.goes.iloc[-30:]['Temp'])
+        if self.goes.shape[0]>60:
+            self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes.iloc[-60:]['time_tag']]
+            self.new_temp = np.array(self.goes.iloc[-60:]['Temp'])
         else: 
             self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes['time_tag']]
             self.new_temp = np.array(self.goes['Temp'])
@@ -805,9 +805,9 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.temp_data.setData(self.time_tags, self.new_temp)
         
     def em_plot_update(self):
-        if self.goes.shape[0]>30:
-            self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes.iloc[-30:]['time_tag']]
-            self.new_em = np.array(self.goes.iloc[-30:]['emission measure'])
+        if self.goes.shape[0]>60:
+            self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes.iloc[-60:]['time_tag']]
+            self.new_em = np.array(self.goes.iloc[-60:]['emission measure'])
         else: 
             self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes['time_tag']]
             self.new_em = np.array(self.goes['emission measure'])
@@ -906,16 +906,16 @@ class RealTimeTrigger(QtWidgets.QWidget):
             lower = 10**self._lowest_yrange
             higher = 10**self._highest_yrange
         if self.flare_summary.shape[0]!=0:
-            if self.flare_summary['Trigger'].iloc[-1] in list(self.goes['time_tag'].iloc[-30:]):
+            if self.flare_summary['Trigger'].iloc[-1] in list(self.goes['time_tag'].iloc[-60:]):
                 self.flare_trigger_plot.setData([pd.Timestamp(self.flare_summary['Trigger'].iloc[-1]).timestamp()]*2, [lower, higher])
                 self.flare_trigger_plot.setAlpha(1, False)
-            if self.flare_summary['Trigger'].iloc[-1] not in list(self.goes['time_tag'].iloc[-30:]):
+            if self.flare_summary['Trigger'].iloc[-1] not in list(self.goes['time_tag'].iloc[-60:]):
                 self.flare_trigger_plot.setData([self.time_tags[0]]*2, [lower, higher])
                 self.flare_trigger_plot.setAlpha(0, False)
-            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() > pd.Timestamp(self.goes['time_tag'].iloc[-30]).timestamp():
+            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() > pd.Timestamp(self.goes['time_tag'].iloc[-60]).timestamp():
                 self.flare_realtrigger_plot.setData([pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp()]*2, [lower, higher])
                 self.flare_realtrigger_plot.setAlpha(1, False)
-            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() <= pd.Timestamp(self.goes['time_tag'].iloc[-30]).timestamp():
+            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() <= pd.Timestamp(self.goes['time_tag'].iloc[-60]).timestamp():
                 self.flare_realtrigger_plot.setData([self.time_tags[0]]*2, [lower, higher])
                 self.flare_realtrigger_plot.setAlpha(0, False)
         else:
@@ -929,22 +929,22 @@ class RealTimeTrigger(QtWidgets.QWidget):
         do not change from log to linear.
         '''
         if self.flare_summary.shape[0]!=0:
-            if self.flare_summary['Trigger'].iloc[-1] in list(self.goes['time_tag'].iloc[-30:]):
+            if self.flare_summary['Trigger'].iloc[-1] in list(self.goes['time_tag'].iloc[-60:]):
                 self.flare_trigger_tempplot.setData([pd.Timestamp(self.flare_summary['Trigger'].iloc[-1]).timestamp()]*2, [self.line_min_temp, self.line_max_temp])
                 self.flare_trigger_tempplot.setAlpha(1, False)
                 self.flare_trigger_emplot.setData([pd.Timestamp(self.flare_summary['Trigger'].iloc[-1]).timestamp()]*2, [self.line_min_em, self.line_max_em])
                 self.flare_trigger_emplot.setAlpha(1, False)
-            if self.flare_summary['Trigger'].iloc[-1] not in list(self.goes['time_tag'].iloc[-30:]):
+            if self.flare_summary['Trigger'].iloc[-1] not in list(self.goes['time_tag'].iloc[-60:]):
                 self.flare_trigger_tempplot.setData([self.time_tags[0]]*2, [self.line_min_temp, self.line_max_temp])
                 self.flare_trigger_tempplot.setAlpha(0, False)
                 self.flare_trigger_emplot.setData([self.time_tags[0]]*2, [self.line_min_em, self.line_max_em])
                 self.flare_trigger_emplot.setAlpha(0, False)
-            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() > pd.Timestamp(self.goes['time_tag'].iloc[-30]).timestamp():
+            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() > pd.Timestamp(self.goes['time_tag'].iloc[-60]).timestamp():
                 self.flare_realtrigger_tempplot.setData([pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp()]*2, [self.line_min_temp, self.line_max_temp])
                 self.flare_realtrigger_tempplot.setAlpha(1, False)
                 self.flare_realtrigger_emplot.setData([pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp()]*2, [self.line_min_em, self.line_max_em])
                 self.flare_realtrigger_emplot.setAlpha(1, False)
-            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() <= pd.Timestamp(self.goes['time_tag'].iloc[-30]).timestamp():
+            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() <= pd.Timestamp(self.goes['time_tag'].iloc[-60]).timestamp():
                 self.flare_realtrigger_tempplot.setData([self.time_tags[0]]*2, [self.line_min_temp, self.line_max_temp])
                 self.flare_realtrigger_tempplot.setAlpha(0, False)
                 self.flare_realtrigger_emplot.setData([self.time_tags[0]]*2, [self.line_min_em, self.line_max_em])
@@ -964,16 +964,16 @@ class RealTimeTrigger(QtWidgets.QWidget):
         and whenever we switch from log to linear.
         '''
         if self.flare_summary.shape[0]!=0:
-            if self.flare_summary['Trigger'].iloc[-1] in list(self.goes['time_tag'].iloc[-30:]):
+            if self.flare_summary['Trigger'].iloc[-1] in list(self.goes['time_tag'].iloc[-60:]):
                 self.flare_trigger_eveplot0.setData([pd.Timestamp(self.flare_summary['Trigger'].iloc[-1]).timestamp()]*2, [self.line_min_eve0, self.line_max_eve0])
                 self.flare_trigger_eveplot0.setAlpha(1, False)
-            if self.flare_summary['Trigger'].iloc[-1] not in list(self.goes['time_tag'].iloc[-30:]):
+            if self.flare_summary['Trigger'].iloc[-1] not in list(self.goes['time_tag'].iloc[-60:]):
                 self.flare_trigger_eveplot0.setData([self.new_eve_time_tags[0]]*2, [self.line_min_eve0, self.line_max_eve0])
                 self.flare_trigger_eveplot0.setAlpha(0, False)
-            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() > pd.Timestamp(self.goes['time_tag'].iloc[-30]).timestamp():
+            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() > pd.Timestamp(self.goes['time_tag'].iloc[-60]).timestamp():
                 self.flare_realtrigger_eveplot0.setData([pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp()]*2, [self.line_min_eve0, self.line_max_eve0])
                 self.flare_realtrigger_eveplot0.setAlpha(1, False)
-            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() <= pd.Timestamp(self.goes['time_tag'].iloc[-30]).timestamp():
+            if pd.Timestamp(self.flare_summary['Realtime Trigger'].iloc[-1]).timestamp() <= pd.Timestamp(self.goes['time_tag'].iloc[-60]).timestamp():
                 self.flare_realtrigger_eveplot0.setData([self.new_eve_time_tags[0]]*2, [self.line_min_eve0, self.line_max_eve0])
                 self.flare_realtrigger_eveplot0.setAlpha(0, False)
         else:
@@ -1017,14 +1017,14 @@ class RealTimeTrigger(QtWidgets.QWidget):
         '''
         if self.flare_summary.shape[0] != 0:
             #setting launch lines to the right time
-            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-30]<=self.coming_launch_time):
+            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-60]<=self.coming_launch_time):
                 self._plot_foxsi_launch_lines(self.FOXSI_launch_tempplot, self.line_min_temp, self.line_max_temp)
                 self._plot_foxsi_launch_lines(self.FOXSI_launch_emplot, self.line_min_em, self.line_max_em)
-            if hasattr(self, "coming_launch_time") and (list(self.goes['time_tag'])[-30]<=self.coming_launch_time):
+            if hasattr(self, "coming_launch_time") and (list(self.goes['time_tag'])[-60]<=self.coming_launch_time):
                 self._plot_hic_launch_lines(self.HIC_launch_tempplot, self.line_min_temp, self.line_max_temp)
                 self._plot_hic_launch_lines(self.HIC_launch_emplot, self.line_min_em, self.line_max_em)
             #removing launch lines when they are out of range
-            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-30]>self.coming_launch_time):
+            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-60]>self.coming_launch_time):
                 self.FOXSI_launch_tempplot.setData([np.nan]*2, [self.line_min_temp, self.line_max_temp])
                 self.FOXSI_launch_tempplot.setAlpha(0, False)
                 self.FOXSI_launch_emplot.setData([np.nan]*2, [self.line_min_em, self.line_max_em])
@@ -1032,8 +1032,8 @@ class RealTimeTrigger(QtWidgets.QWidget):
                 del self.coming_launch_time
                 if hasattr(self,"_launched"):
                     del self._launched
-            #if self.flare_summary['FOXSI Obs Start'].iloc[-1] not in list(self.goes['time_tag'].iloc[-30:]):
-            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-30]>self.coming_launch_time_hic): 
+            #if self.flare_summary['FOXSI Obs Start'].iloc[-1] not in list(self.goes['time_tag'].iloc[-60:]):
+            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-60]>self.coming_launch_time_hic): 
                 self.HIC_launch_tempplot.setData([np.nan]*2, [self.line_min_temp, self.line_max_temp])
                 self.HIC_launch_tempplot.setAlpha(0, False)
                 self.HIC_launch_emplot.setData([np.nan]*2, [self.line_min_em, self.line_max_em])
@@ -1054,16 +1054,16 @@ class RealTimeTrigger(QtWidgets.QWidget):
         '''
         if self.flare_summary.shape[0] != 0:
             #setting launch lines to the right time
-            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-30]<=self.coming_launch_time):
+            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-60]<=self.coming_launch_time):
                 self._plot_foxsi_launch_lines(self.FOXSI_launch_eveplot0, self.line_min_eve0, self.line_max_eve0)
-            if hasattr(self, "coming_launch_time") and (list(self.goes['time_tag'])[-30]<=self.coming_launch_time):
+            if hasattr(self, "coming_launch_time") and (list(self.goes['time_tag'])[-60]<=self.coming_launch_time):
                 self._plot_hic_launch_lines(self.HIC_launch_eveplot0, self.line_min_eve0, self.line_max_eve0)
             #removing launch lines when they are out of range
-            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-30]>self.coming_launch_time):
+            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-60]>self.coming_launch_time):
                 self.FOXSI_launch_eveplot0.setData([np.nan]*2, [self.line_min_eve0, self.line_max_eve0])
                 self.FOXSI_launch_eveplot0.setAlpha(0, False)
-            #if self.flare_summary['FOXSI Obs Start'].iloc[-1] not in list(self.goes['time_tag'].iloc[-30:]):
-            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-30]>self.coming_launch_time_hic): 
+            #if self.flare_summary['FOXSI Obs Start'].iloc[-1] not in list(self.goes['time_tag'].iloc[-60:]):
+            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-60]>self.coming_launch_time_hic): 
                 self.HIC_launch_eveplot0.setData([np.nan]*2, [self.line_min_eve0, self.line_max_eve0])
                 self.HIC_launch_eveplot0.setAlpha(0, False)
         else:
@@ -1081,16 +1081,16 @@ class RealTimeTrigger(QtWidgets.QWidget):
             higher = 10**self._highest_yrange
         if self.flare_summary.shape[0] != 0:
             #setting launch lines to the right time
-            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-30]<=self.coming_launch_time):
+            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-60]<=self.coming_launch_time):
                 self._plot_foxsi_launch_lines(self.FOXSI_launch_plot, lower, higher)
-            if hasattr(self, "coming_launch_time") and (list(self.goes['time_tag'])[-30]<=self.coming_launch_time):
+            if hasattr(self, "coming_launch_time") and (list(self.goes['time_tag'])[-60]<=self.coming_launch_time):
                 self._plot_hic_launch_lines(self.HIC_launch_plot, lower, higher)
             #removing launch lines when they are out of range
-            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-30]>self.coming_launch_time):
+            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-60]>self.coming_launch_time):
                 self.FOXSI_launch_plot.setData([np.nan]*2, [lower, higher])
                 self.FOXSI_launch_plot.setAlpha(0, False)
-            #if self.flare_summary['FOXSI Obs Start'].iloc[-1] not in list(self.goes['time_tag'].iloc[-30:]):
-            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-30]>self.coming_launch_time_hic):
+            #if self.flare_summary['FOXSI Obs Start'].iloc[-1] not in list(self.goes['time_tag'].iloc[-60:]):
+            if hasattr(self,"coming_launch_time") and (list(self.goes['time_tag'])[-60]>self.coming_launch_time_hic):
                 self.HIC_launch_plot.setData([np.nan]*2, [lower, higher])
                 self.HIC_launch_plot.setAlpha(0, False)  
         else:
