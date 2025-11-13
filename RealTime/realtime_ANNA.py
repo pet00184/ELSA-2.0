@@ -33,7 +33,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.eve_slow = True
         
         #initial loading of the data: 
-        self.load_data(reload=False)
+        self.load_data(reload=False, initial=True)
         self.load_eve_data(reload=False)
         self._logy = True
         #doing 1-min data:
@@ -187,8 +187,8 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.evegraph0diff.plot()
         
     def display_xrsb_diff(self):
-        self.min_xrsb, self.max_xrsb = np.nanmin([-5e-8, np.nanmin(self.goes_current['xrsb_diff']) - np.abs(np.nanmin(self.goes_current['xrsb_diff']) * .5), -np.nanmax(self.goes_current['xrsb_diff'])]), np.nanmax([5e-8, np.nanmax(self.goes_current['xrsb_diff'])*1.5])
-        self.line_min_xrsb, self.line_max_xrsb = np.nanmin([-1e-7, np.nanmin(self.goes_current['xrsb_diff']) - np.abs(np.nanmin(self.goes_current['xrsb_diff']) * .4), -np.nanmax(self.goes_current['xrsb_diff'])]), np.nanmax([1e-7, np.nanmax(self.goes_current['xrsb_diff'])*1.6])
+        self.min_xrsb, self.max_xrsb = np.nanmin([-7e-8, np.nanmin(self.goes['xrsb_diff'].iloc[-70:]) - np.abs(np.nanmin(self.goes['xrsb_diff'].iloc[-70:]) * .5), -np.nanmax(self.goes['xrsb_diff'].iloc[-70:])]), np.nanmax([7e-8, np.nanmax(self.goes['xrsb_diff'].iloc[-70:])*1.5])
+        self.line_min_xrsb, self.line_max_xrsb = np.nanmin([-1e-7, np.nanmin(self.goes['xrsb_diff'].iloc[-70:]) - np.abs(np.nanmin(self.goes['xrsb_diff'].iloc[-70:]) * .4), -np.nanmax(self.goes['xrsb_diff'].iloc[-70:])]), np.nanmax([1e-7, np.nanmax(self.goes['xrsb_diff'].iloc[-70:])*1.6])
         self.xrsb_diff_graph.plotItem.vb.setLimits(yMin=self.min_xrsb, yMax=self.max_xrsb)
         self.xrsb_diff_graph.showAxis('top')
         self.xrsb_diff_graph.getAxis('top').setStyle(showValues=False)
@@ -199,8 +199,8 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.xrsb_diff_graph.plot()
         
     def display_xrsa_diff(self):
-        self.min_xrsa, self.max_xrsa = np.nanmin([-5e-8, np.nanmin(self.goes_current['xrsa_diff']) - np.abs(np.nanmin(self.goes_current['xrsa_diff']) * .5), -np.nanmax(self.goes_current['xrsa_diff'])]), np.nanmax([5e-8, np.nanmax(self.goes_current['xrsa_diff'])*1.5])
-        self.line_min_xrsa, self.line_max_xrsa = np.nanmin([-1e-7, np.nanmin(self.goes_current['xrsa_diff']) - np.abs(np.nanmin(self.goes_current['xrsa_diff']) * .4), -np.nanmax(self.goes_current['xrsa_diff'])]), np.nanmax([1e-7, np.nanmax(self.goes_current['xrsa_diff'])*1.6])
+        self.min_xrsa, self.max_xrsa = np.nanmin([-5e-8, np.nanmin(self.goes['xrsa_diff'].iloc[-70:]) - np.abs(np.nanmin(self.goes['xrsa_diff'].iloc[-70:]) * .5), -np.nanmax(self.goes['xrsa_diff'].iloc[-70:])]), np.nanmax([5e-8, np.nanmax(self.goes['xrsa_diff'].iloc[-70:])*1.5])
+        self.line_min_xrsa, self.line_max_xrsa = np.nanmin([-1e-7, np.nanmin(self.goes['xrsa_diff'].iloc[-70:]) - np.abs(np.nanmin(self.goes['xrsa_diff'].iloc[-70:]) * .4), -np.nanmax(self.goes['xrsa_diff'].iloc[-70:])]), np.nanmax([1e-7, np.nanmax(self.goes['xrsa_diff'].iloc[-70:])*1.6])
         self.xrsa_diff_graph.plotItem.vb.setLimits(yMin=self.min_xrsa, yMax=self.max_xrsa)
         self.xrsa_diff_graph.showAxis('top')
         self.xrsa_diff_graph.getAxis('top').setStyle(showValues=False)
@@ -245,8 +245,8 @@ class RealTimeTrigger(QtWidgets.QWidget):
         pen = pg.mkPen(color=color, width=5)
         return self.xrsa_diff_graph.plot(x, y, name=plotname, pen=pen)
         
-    def load_data(self, reload=True):
-        self.goes_current = self.GOES_data()
+    def load_data(self, reload=True, initial=False):
+        self.goes_current = self.GOES_data(initial=initial)
         self.calculate_xrs_diffs()
         if not reload:
             self.goes = self.goes_current
@@ -338,19 +338,19 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.new_time_tags = [pd.Timestamp(date).timestamp() for date in self.goes['time_tag']]
         self.new_xrsb_diff = np.array(self.goes['xrsb_diff'])
         
-        self.display_xrsb_diff()
         self.xrsb_diff_data.setData(self.new_time_tags, self.new_xrsb_diff)
         self.xrsb_diff_line.setData([self.new_time_tags[0]]*2, [self.line_min_xrsb, self.line_max_xrsb])
         self.line0_xrsb.setData([self.new_time_tags[0], self.xmax], [0, 0])
+        self.display_xrsb_diff()
         
     def xrsa_diff_plot_update(self):
         self.new_time_tags = [pd.Timestamp(date).timestamp() for date in self.goes['time_tag']]
         self.new_xrsa_diff = np.array(self.goes['xrsa_diff'])
         
-        self.display_xrsa_diff()
         self.xrsa_diff_data.setData(self.new_time_tags, self.new_xrsa_diff)
         self.xrsa_diff_line.setData([self.new_time_tags[0]]*2, [self.line_min_xrsa, self.line_max_xrsa])
         self.line0_xrsa.setData([self.new_time_tags[0], self.xmax], [0, 0])
+        self.display_xrsa_diff()
             
     def eve_plot_update(self):
         self.new_eve_time_tags = [pd.Timestamp(str(date)).timestamp() for date in self.eve['UTC_TIME']]
