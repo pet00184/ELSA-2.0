@@ -87,7 +87,7 @@ def process_irradiance_all_files(ifns, max_workers=4):
         results = list(executor.map(make_irradiance, ifns))
     
     df = pd.DataFrame(results)
-    df['time_tag'] = pd.to_datetime(df['time_tag'])
+    df['time_tag'] = pd.to_datetime(df['time_tag']).dt.tz_localize('UTC')
     df = df.sort_values('time_tag').reset_index(drop=True)
     df['satellite'] = [18]*len(df['xrsa'])
     return df
