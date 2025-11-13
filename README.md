@@ -9,10 +9,13 @@ ELSA and ANNA will be used in the FOXSI-5 launch, and updating to version 2.0 is
 The setup for this repository is the exact same process as what was needed for the flarepred repository. As this version is a work in progress, I would suggest keeping both repositories for flare monitoring, so that you can switch back to flarepred if unforeseen bugs are discovered in this one during the trial run.
 
 ### If you already have a conda virtual environment flarpred-env (or whatever you called yours):
-There is only one additional package needed for ELSA/ANNA 2.0! Therefore, if you already have a virtual enfironment for the old `flarepred` repository, I would simply add the package to that existing conda environment. To do this, 
+There are a few additional packages needed for ELSA/ANNA 2.0. If you already have a virtual enfironment for the old `flarepred` repository, I would simply add the package to that existing conda environment. To do this, 
 
 * activate your existing virtual environment `conda activate flarepred-env`
-* install the necessary package `pip install siphon`
+* install the necessary packages:
+1. `pip install siphon`
+2. `pip install xarray`
+3. `pip install netCDF4`
 * enjoy your low latency data!
 
 **Starting and using ELSA/ANNA follow the exact same processes as before (see below!).** 
