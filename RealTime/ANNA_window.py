@@ -97,7 +97,7 @@ class main_window(QtWidgets.QWidget):
 
     def data_source(self, no_eve=False):
         """ Return GOES and EOVSA realtime data sources. """
-        return GOES_data.load_realtime_XRS, EVE_data.load_realtime_EVE
+        return GOES_data.load_new_realtime_XRS, EVE_data.load_realtime_EVE
     
     def layout_bkg(self, main_layout, panel_name, style_sheet_string, grid=False):
             """ Adds a background widget (panel) to a main layout so border, colours, etc. can be controlled. """
