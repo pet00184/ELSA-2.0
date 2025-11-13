@@ -1,7 +1,21 @@
 # ELSA/ANNA 2.0
-Repository for the Early Large Solar flare Alert (ELSA) and ANother Near-realtime Alert (ANNA) systems that were used in the April 2024 FOXSI-4 and HI-C lauches.
+Repository for the Early Large Solar flare Alert (ELSA) and ANother Near-realtime Alert (ANNA) systems. This is a new repository that holds the ELSA/ANNA versions which use the lower latency (~20 seconds) and cadence (30 seconds) GOES XRS data. The versions of ELSA/ANNA that were used in the April 2024 FOXSI-4 and HI-C lauches can be found [here](https://github.com/pet00184/flarepred).
 
-ELSA and ANNA will be used in the Winter 2025/2026 FOXSI-5 launch!
+ELSA and ANNA will be used in the FOXSI-5 launch, and updating to version 2.0 is currently underway!
+
+## Notes for those who have used the old version: 
+*If this is your first time using ELSA/ANNA, move ahead to Setup!* 
+
+The setup for this repository is the exact same process as what was needed for the flarepred repository. As this version is a work in progress, I would suggest keeping both repositories for flare monitoring, so that you can switch back to flarepred if unforeseen bugs are discovered in this one during the trial run.
+
+### If you already have a conda virtual environment flarpred-env (or whatever you called yours):
+There is only one additional package needed for ELSA/ANNA 2.0! Therefore, if you already have a virtual enfironment for the old `flarepred` repository, I would simply add the package to that existing conda environment. To do this, 
+
+* activate your existing virtual environment `conda activate flarepred-env`
+* install the necessary package `pip install siphon`
+* enjoy your low latency data!
+
+**Starting and using ELSA/ANNA follow the exact same processes as before (see below!).** 
 
 ## To Set-up
 
