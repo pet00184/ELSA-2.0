@@ -10,3 +10,4 @@ bs4
 beautifulsoup4
 h5py
 scikit-learn
+siphon
