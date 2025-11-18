@@ -547,7 +547,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
     def calculate_param_arrays(self, added_points, new=False):
         ''' Calculates temperature etc. and appends a new column to the data (or just last thing. work in progress)
         '''
-        differences_to_calculate = [3, 5]
+        differences_to_calculate = [1, 3, 5]
         if not new:
             for diff in differences_to_calculate:
                 steps = diff*2 #to deal with the 30 second cadence instead of 1 minute!!
