@@ -18,7 +18,7 @@ PACKAGE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 class RealTimeTrigger(QtWidgets.QWidget):
     
-    ms_timing = 4000 #amount of ms between each new data download.
+    ms_timing = 7000 #amount of ms between each new data download.
 
     def __init__(self, goes_data, eve_data, foldername, parent=None):
         QtWidgets.QWidget.__init__(self,parent)
@@ -271,23 +271,24 @@ class RealTimeTrigger(QtWidgets.QWidget):
     def check_for_new_eve_data(self):
         """ Checking for new EOVSA data- this will update about once per second!"""
         self.new_eve_data = False
-        new_times = self.eve_current.iloc[:]['UTC_TIME'] > list(self.eve['UTC_TIME'])[-1]
-        new_ave_times = self.eve_ave_current.iloc[:]['dt'] > list(self.eve_ave['dt'])[-1]
+        if self.eve_current is not None:
+            new_times = self.eve_current.iloc[:]['UTC_TIME'] > list(self.eve['UTC_TIME'])[-1]
+            new_ave_times = self.eve_ave_current.iloc[:]['dt'] > list(self.eve_ave['dt'])[-1]
         
-        if len(self.eve_current[new_times]['UTC_TIME']) > 0:
-            added_points = len(self.eve_current[new_times]['UTC_TIME'])
-            self.eve = self.eve._append(self.eve_current[new_times], ignore_index=True)
-            self.new_eve_data=True
-        if len(self.eve_ave_current[new_ave_times]['dt']) > 0:
-            added_points = len(self.eve_ave_current[new_ave_times]['dt'])
-            self.eve_ave = self.eve_ave._append(self.eve_ave_current[new_ave_times], ignore_index=True)
-            #doing 1-min data:
-            if self.eve_slow:
-                self.eve_slow_current = self.eve_current.groupby(pd.Grouper(key='dt', freq='1min')).mean(numeric_only=True).reset_index()
-                eveslowdiff = np.array(self.eve_slow_current['ESP_0_7_COUNTS'])
-                eveslowdiff = eveslowdiff[1:] - eveslowdiff[:-1]
-                eveslowdiff_final = np.concatenate([np.full(1, math.nan), eveslowdiff]) #appending correct # of 0's to front
-                self.eve_slow_current['slow_diffs'] = eveslowdiff_final
+            if len(self.eve_current[new_times]['UTC_TIME']) > 0:
+                added_points = len(self.eve_current[new_times]['UTC_TIME'])
+                self.eve = self.eve._append(self.eve_current[new_times], ignore_index=True)
+                self.new_eve_data=True
+            if len(self.eve_ave_current[new_ave_times]['dt']) > 0:
+                added_points = len(self.eve_ave_current[new_ave_times]['dt'])
+                self.eve_ave = self.eve_ave._append(self.eve_ave_current[new_ave_times], ignore_index=True)
+                #doing 1-min data:
+                if self.eve_slow:
+                    self.eve_slow_current = self.eve_current.groupby(pd.Grouper(key='dt', freq='1min')).mean(numeric_only=True).reset_index()
+                    eveslowdiff = np.array(self.eve_slow_current['ESP_0_7_COUNTS'])
+                    eveslowdiff = eveslowdiff[1:] - eveslowdiff[:-1]
+                    eveslowdiff_final = np.concatenate([np.full(1, math.nan), eveslowdiff]) #appending correct # of 0's to front
+                    self.eve_slow_current['slow_diffs'] = eveslowdiff_final
             
     def check_for_new_data(self):
         """ Check for new data and add to what is plotted. """

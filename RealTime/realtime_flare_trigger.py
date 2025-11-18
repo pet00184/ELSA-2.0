@@ -19,7 +19,7 @@ PACKAGE_DIR = os.path.dirname(os.path.realpath(__file__))
 class RealTimeTrigger(QtWidgets.QWidget):
     
     print_updates=False #prints more updated in terminal. Only suggested for real-time data.
-    ms_timing = 4000 #amount of ms between each new data download.
+    ms_timing = 7000 #amount of ms between each new data download.
     
     LAUNCH_TO_FOXSI_OBS_START = 2
     LAUNCH_TO_FOXSI_OBS_END = LAUNCH_TO_FOXSI_OBS_START + 6
@@ -520,12 +520,13 @@ class RealTimeTrigger(QtWidgets.QWidget):
     def check_for_new_eve_data(self):
         """ Checking for new EOVSA data- this will update about once per second!"""
         self.new_eve_data = False
-        new_times = self.eve_current.iloc[:]['UTC_TIME'] > list(self.eve['UTC_TIME'])[-1]
-        
-        if len(self.eve_current[new_times]['UTC_TIME']) > 0:
-            added_points = len(self.eve_current[new_times]['UTC_TIME'])
-            self.eve = self.eve._append(self.eve_current[new_times], ignore_index=True)
-            self.new_eve_data=True
+        if self.eve_current is not None:
+            new_times = self.eve_current.iloc[:]['UTC_TIME'] > list(self.eve['UTC_TIME'])[-1]
+
+            if len(self.eve_current[new_times]['UTC_TIME']) > 0:
+                added_points = len(self.eve_current[new_times]['UTC_TIME'])
+                self.eve = self.eve._append(self.eve_current[new_times], ignore_index=True)
+                self.new_eve_data=True
             
     def check_for_new_data(self):
         """ Check for new data and add to what is plotted. """
