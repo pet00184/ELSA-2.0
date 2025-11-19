@@ -135,7 +135,7 @@ def load_new_realtime_XRS(nfiles=5, median=True, max_workers=4, initial=False):
         )
 
         cat_url = base_cat_url.format(
-            satellite='goes', sat_pos='east', platform='grb',
+            satellite='goes', sat_pos='west', platform='grb',
             dataset='EXIS', product='SFXR', date='current'
         )
         out_dir = os.path.join(os.getcwd(), "goes_cache")
