@@ -27,7 +27,7 @@ There are a few additional packages needed for ELSA/ANNA 2.0. If you already hav
 Either 
 
 * Download the `flarepred` repository manually (`<> Code`>>`Download ZIP`) and place in a directory of your choice; or
-*  navigate to that directory on your machine in the command line and use `git clone https://github.com/pet00184/flarepred.git`. 
+*  navigate to that directory on your machine in the command line and use `git clone https://github.com/pet00184/ELSA-2.0.git`. 
   
 You now have the `flarepred` package.
 
