@@ -8,6 +8,7 @@ import EVE_data_upload as EVE_data
 from run_realtime_algorithm import utc_time_folder
 from QTimeWidget import QTimeWidget
 from QANNAButtons import QButtonsWidget
+from QDataValues import QGOESValueWidget
 import os
 import glob
 
@@ -45,6 +46,7 @@ class main_window(QtWidgets.QWidget):
     # for some post processing of results once GUI window is closed
     post_analysis(utc_time_here)
     """
+
     def __init__(self):
         """ Initialise a grid on a widget and add different iterations of the QTimeWidget widget. """
         QtWidgets.QWidget.__init__(self)
@@ -56,6 +58,7 @@ class main_window(QtWidgets.QWidget):
         # define main layouts for the status window, LED, buttons, times, and plot
         buttons_layout = QtWidgets.QGridLayout()
         time_layout = QtWidgets.QVBoxLayout()
+        datad_layout = QtWidgets.QGridLayout() #trying to add morst recent times 
         plot_layout = QtWidgets.QVBoxLayout()
 
         self.panels = dict()
@@ -64,7 +67,7 @@ class main_window(QtWidgets.QWidget):
         _time_layout = self.layout_bkg(main_layout=time_layout, 
                                          panel_name="panel_time", 
                                          style_sheet_string=self._layout_style("grey", "white"))
-        times = QTimeWidget()
+        times = QTimeWidget(ANNA=True)
         times.setStyleSheet("border-width: 0px;")
         self.panels["panel_time"].setMinimumSize(265,10) # stops the panel from stretching and squeezing when changing times
         _time_layout.addWidget(times) # widget, -y, x
@@ -79,6 +82,19 @@ class main_window(QtWidgets.QWidget):
                                          style_sheet_string=self._layout_style("grey", "white"))
         buttons = QButtonsWidget(plotting_widget=self.plot)
         _buttons_layout.addWidget(buttons) # widget, -y, x
+
+        # widget for displaying the most recent goes values
+        _datad_layout = self.layout_bkg(main_layout=datad_layout, 
+                                         panel_name="panel_datad", 
+                                         style_sheet_string=self._layout_style("grey", "white"))
+        self.goes_values_window = QGOESValueWidget(title_label="GOES Value, Time, Real Time")
+        self.goes_values_window.setStyleSheet("border-width: 0px;")
+        _datad_layout.addWidget(self.goes_values_window)
+        self.real_times = []
+
+        # when new data is plotted make sure to update the "latest value" display
+        self.update_goes_values()
+        self.plot.value_changed_new_xrsb.connect(self.update_goes_values)
         
         # combine the status and LED layouts
         status_values_and_led_layout = QtWidgets.QGridLayout()
@@ -87,13 +103,34 @@ class main_window(QtWidgets.QWidget):
         # now all together
         global_layout = QtWidgets.QGridLayout()
         global_layout.addLayout(plot_layout,0, 0, 8, 4)
-        global_layout.addLayout(time_layout,8, 1, 1, 3)
+        global_layout.addLayout(time_layout,8, 1, 1, 2)
         global_layout.addLayout(status_values_and_led_layout,8, 0, 1, 1)
+        global_layout.addLayout(datad_layout, 8, 3, 1, 1)
 
         # actually display the layout
         self.setLayout(global_layout)
         unifrom_layout_stretch(global_layout, grid=True)
         unifrom_layout_stretch(self.plot.layout, grid=True)
+
+    def _goes_time_strings(self):
+        """ 
+        Get the data and real time of the goes data to display along 
+        with the class. 
+        """
+        _time_strings = list(pd.to_datetime(self.plot.goes["time_tag"][-self.goes_values_window.number_of_vals:]).dt.strftime('%H:%M:%S'))
+        self.real_times.append(self.plot.current_realtime.strftime('%H:%M:%S'))
+
+        if len(self.real_times)>len(_time_strings):
+            self.real_times = self.real_times[-self.goes_values_window.number_of_vals:]
+
+        for c in range(1,len(self.real_times)+1):
+            _time_strings[-1*c] += f" @ {self.real_times[-1*c]}"
+        return _time_strings
+
+    def update_goes_values(self):
+        """ Used to update the goes values widget `self.***`."""
+        _time_strings = self._goes_time_strings()
+        self.goes_values_window.update_labels(self.plot.goes['xrsb'][-self.goes_values_window.number_of_vals:], _time_strings)
 
     def data_source(self, no_eve=False):
         """ Return GOES and EOVSA realtime data sources. """
