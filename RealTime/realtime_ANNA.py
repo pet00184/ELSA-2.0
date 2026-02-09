@@ -20,6 +20,8 @@ class RealTimeTrigger(QtWidgets.QWidget):
     
     ms_timing = 7000 #amount of ms between each new data download.
 
+    value_changed_new_xrsb = QtCore.pyqtSignal()
+
     def __init__(self, goes_data, eve_data, foldername, parent=None):
         QtWidgets.QWidget.__init__(self,parent)
             
@@ -48,28 +50,43 @@ class RealTimeTrigger(QtWidgets.QWidget):
         #initializing plot: 
         self.layout = QtWidgets.QGridLayout()
 
-        self.evegraph30 = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
+        #switching out EVE30 for main goes
+        self.graphWidget = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
+        #self.evegraph30 = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
         self.evegraph0diff = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
         self.xrsa_diff_graph = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
         self.xrsb_diff_graph = pg.PlotWidget(axisItems={'bottom': pg.DateAxisItem()})
 
         self.layout.addWidget(self.evegraph0diff, 1, 0, 1, 1)
-        self.layout.addWidget(self.evegraph30, 1, 1, 1, 1)
+        #self.layout.addWidget(self.evegraph30, 1, 1, 1, 1)
+        self.layout.addWidget(self.graphWidget, 0, 0, 1, 1)
         self.layout.addWidget(self.xrsa_diff_graph, 0, 1, 1, 1)
-        self.layout.addWidget(self.xrsb_diff_graph, 0, 0, 1, 1)
+        self.layout.addWidget(self.xrsb_diff_graph, 1, 1, 1, 1)
         self.setLayout(self.layout)
         
-        # # Prepare EVE30 widget
-        self.evegraph30.setMouseEnabled(x=False, y=False)  # Disable mouse panning & zooming
+        # # Prepare XRS widget
+        self.graphWidget.setMouseEnabled(x=False, y=False)  # Disable mouse panning & zooming
+        
+        self.graphWidget.setBackground('w')
+        styles = {'color':'k', 'font-size':'20pt', "units":None} 
+        self.graphWidget.setLabel('left', 'W m<sup>-2</sup>', **styles)
+        self.graphWidget.setLabel('bottom', 'Time', **styles)
+        self.graphWidget.setTitle(f'GOES XRS', color='k', size='24pt')
+        self.graphWidget.addLegend()
+        self.graphWidget.showGrid(x=True, y=True)
+        self.graphWidget.getAxis('left').enableAutoSIPrefix(enable=False)
 
-        self.evegraph30.setBackground('w')
-        styles = {'color':'k', 'font-size':'20pt', "units":None}
-        self.evegraph30.setLabel('left', 'Raw Counts', **styles)
-        self.evegraph30.setLabel('bottom', 'Time', **styles)
-        self.evegraph30.setTitle(f'EVE ESP 30nm', color='k', size='24pt')
-        self.evegraph30.addLegend()
-        self.evegraph30.showGrid(x=True, y=True)
-        self.evegraph30.getAxis('left').enableAutoSIPrefix(enable=False)
+        # # # Prepare EVE30 widget
+        # self.evegraph30.setMouseEnabled(x=False, y=False)  # Disable mouse panning & zooming
+
+        # self.evegraph30.setBackground('w')
+        # styles = {'color':'k', 'font-size':'20pt', "units":None}
+        # self.evegraph30.setLabel('left', 'Raw Counts', **styles)
+        # self.evegraph30.setLabel('bottom', 'Time', **styles)
+        # self.evegraph30.setTitle(f'EVE ESP 30nm', color='k', size='24pt')
+        # self.evegraph30.addLegend()
+        # self.evegraph30.showGrid(x=True, y=True)
+        # self.evegraph30.getAxis('left').enableAutoSIPrefix(enable=False)
         
         # # Prepare EVE0-7 deriv widget
         self.evegraph0diff.setMouseEnabled(x=False, y=False)  # Disable mouse panning & zooming
@@ -107,7 +124,13 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.xrsa_diff_graph.showGrid(x=True, y=True)
         self.xrsa_diff_graph.getAxis('left').enableAutoSIPrefix(enable=False)
 
-        self.display_eve30()
+        #updating display of plots
+        #self.display_eve30()
+        # convert left and right y-axes to display GOES notation stuff
+        self._min_arr, self._max_arr = "xrsa", "xrsb" # give values to know what ylims are used
+        self._logy = True
+        self._lowest_yrange, self._highest_yrange = -8*1.02, -3*0.96
+        self.display_goes()
         self.display_eve0diff()
         self.display_xrsb_diff()
         self.display_xrsa_diff()
@@ -115,9 +138,9 @@ class RealTimeTrigger(QtWidgets.QWidget):
             
         # #PLOTTING EVE:
         self.evetime_tags = [pd.Timestamp(str(date)).timestamp() for date in self.eve['UTC_TIME']]
-        self.eve30_data = self.eveplot30(self.evetime_tags, self.eve['ESP_30_COUNTS'], color='cyan', plotname='ESP 30 nm')
-        self.eve_line = self.eveplot30([self.evetime_tags[0]]*2, [self.line_min_eve30, self.line_max_eve30], color='k', plotname=None)
-        self.eve_line.setAlpha(0, False)
+        # self.eve30_data = self.eveplot30(self.evetime_tags, self.eve['ESP_30_COUNTS'], color='cyan', plotname='ESP 30 nm')
+        # self.eve_line = self.eveplot30([self.evetime_tags[0]]*2, [self.line_min_eve30, self.line_max_eve30], color='k', plotname=None)
+        # self.eve_line.setAlpha(0, False)
         
         #PLOTTING EVE DIFF:
         self.eve_ave_time_tags = [pd.Timestamp(str(date)).timestamp() for date in self.eve_ave['dt']]
@@ -145,12 +168,117 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.xrsa_diff_line.setAlpha(0, False)
         #add 0 line:
         self.line0_xrsa = self.xrsa_diff_graph.plot([self.time_tags[0], self.xmax], [0, 0], pen=pg.mkPen('k', width=3, style=QtCore.Qt.PenStyle.DashLine))
+
+        #PLOTTING XRS
+        self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes['time_tag']]
+        self.xrsb_data = self.plot(self.time_tags, np.array(self.goes['xrsb']), color='r', plotname='GOES XRSB')
+        self.xrsa_data = self.plot(self.time_tags, np.array(self.goes['xrsa']), color='b', plotname='GOES XRSA')
         
         #updating data
         self.timer = QtCore.QTimer()
         self.timer.setInterval(self.ms_timing)
         self.timer.timeout.connect(self._update)
         self.timer.start()
+
+    def _goes_strings(self, cls, arng, append=""):
+        """ GenerateGOES class strings."""
+        return [cls+str(v)+append for v in arng]
+
+    def display_goes(self):
+        """ Method to add in the GOES class stuff"""
+        
+        log_value = np.arange(-10,-1) # get the letter class log-values
+        value = 10**(log_value.astype(float)) # get the letter class values
+        
+        intermediate_classes = [1,2,3,4,5,6,7,8,9]
+        num_of_int = [value[None,:] for _ in range(len(intermediate_classes))]
+        value_ints = (np.vstack(num_of_int).T*np.array(intermediate_classes)).flatten() # now go letter class, half up, next letter class; e.g., A, A5, B, B5, etc.
+        log_value_ints = self._log_data(value_ints)
+        
+        goes_labels_ints = self._goes_strings("A0.0", arng=intermediate_classes)+\
+                           self._goes_strings("A0.", arng=intermediate_classes)+\
+                           self._goes_strings("A", arng=intermediate_classes)+\
+                           self._goes_strings("B", arng=intermediate_classes)+\
+                           self._goes_strings("C", arng=intermediate_classes)+\
+                           self._goes_strings("M", arng=intermediate_classes)+\
+                           self._goes_strings("X", arng=intermediate_classes)+\
+                           self._goes_strings("X", arng=intermediate_classes, append="0")+\
+                           self._goes_strings("X", arng=intermediate_classes, append="00")
+
+        # set the y-limits for the plot
+        self.ylims()
+
+        # do axis stuff, show top line and annotate right axis
+        self.graphWidget.showAxis('top')
+        self.graphWidget.getAxis('top').setStyle(showValues=False)
+        self.graphWidget.getAxis('top').setGrid(False)
+        self.graphWidget.showAxis('right')
+        #self.graphWidget.getAxis('right').setLabel('GOES Class')
+        self.graphWidget.getAxis('right').setGrid(False)
+        self.graphWidget.getAxis('right').enableAutoSIPrefix(enable=False)
+
+        keep_intermediate_classes = self.ticks_display()
+
+        goes_labels_ints_keep = self._keep_goes_intermediate(intermediate_classes=intermediate_classes, classes_to_keep=keep_intermediate_classes)
+        goes_value_ints_keep = log_value_ints[goes_labels_ints_keep]
+
+        if self._logy:
+            self.graphWidget.getAxis('right').setTicks([[(v, str(s)) if (v in goes_value_ints_keep) else (v,"") for v,s in zip(log_value_ints,goes_labels_ints)]])
+            self.graphWidget.getAxis('left').setTicks([[(v, f"{s:0.0e}") if (v in goes_value_ints_keep) else (v,"") for v,s in zip(log_value_ints,value_ints)]])
+        else: 
+            self.graphWidget.getAxis('right').setTicks([[(v, str(s)) if (v in goes_value_ints_keep) else (v,"") for v,s in zip(value_ints,goes_labels_ints)]])
+            self.graphWidget.getAxis('left').setTicks([[(v, f"{s:0.0e}") if (v in goes_value_ints_keep) else (v,"") for v,s in zip(value_ints,value_ints)]])
+        
+        self.xlims()
+
+    def ticks_display(self):
+        """ Chooses which ticks to display for certain y-ranges. """
+        _max_arr = getattr(self,"new_"+self._max_arr) if hasattr(self, "new_"+self._max_arr) else self.goes['xrsb']
+        _a = 1.1 if self._logy else np.nanmax(_max_arr[np.isfinite(_max_arr)])*0.9
+        _b = 2.1 if self._logy else np.nanmax(_max_arr[np.isfinite(_max_arr)])*1.5
+
+        if (self.upper-self.lower)<=_a:
+            keep_intermediate_classes = [1,2,3,4,5,6,7,8,9]
+        elif _a<(self.upper-self.lower)<=_b:
+            keep_intermediate_classes = [1,2,4,6,8]
+        else:
+            keep_intermediate_classes = [1]
+        return keep_intermediate_classes
+
+    def _keep_goes_intermediate(self, intermediate_classes, classes_to_keep):
+        """ Work out which intermediate GOES class to plot the tick labels for. """
+        return [(np.array(classes_to_keep)-1)+i*len(intermediate_classes) for i in range(9)]
+
+    def ylims(self):
+        """ 
+        The ylims are:
+            ymin = A-class or half an order of magnitude below the min. of `self._min_arr`.
+            ymax = X10-class or half an order of magnitude above the max. of `self._max_arr`.
+
+        The ylims are, by DEFAULT:
+            ymin = A-class or half an order of magnitude below the min. of XRSA.
+            ymax = X10-class or half an order of magnitude above the max. of XRSB.
+        """
+        _supported_arrays = ["xrsa", "xrsb"]
+        if (self._min_arr not in _supported_arrays) or (self._max_arr not in _supported_arrays):
+            print(f"self._min_arr={self._min_arr} or self._max_arr={self._max_arr} not in _supported_arrays={_supported_arrays}.")
+            return
+        
+        # make sure arrays are the most recent
+        _min_arr = getattr(self,"new_"+self._min_arr) if hasattr(self, "new_"+self._min_arr) else self.goes['xrsa']
+        _max_arr = getattr(self,"new_"+self._max_arr) if hasattr(self, "new_"+self._max_arr) else self.goes['xrsb']
+
+        # define, in log space, the top and bottom y-margin for the plotting
+        _ymargin = 0.25 if self._logy else np.nanmin(_min_arr[np.isfinite(_min_arr)])
+
+        # depend plotting on lowest ~A1 (slightly less to make sure tick plots)
+        _lyr = self._lowest_yrange if self._logy else 10**self._lowest_yrange
+        self.lower = np.nanmax([_lyr, self._log_data(np.nanmin(_min_arr[np.isfinite(_min_arr)]))-_ymargin]) # *1.02 to make sure lower tick for -8 actually appears if needed
+        # on 200x largest xsrb value to look sensible and scale with new data
+        _hyr = self._highest_yrange if self._logy else 10**self._highest_yrange
+        self.upper = np.nanmin([self._log_data(np.nanmax(_max_arr[np.isfinite(_max_arr)]))+_ymargin, _hyr]) # *0.96 to make sure upper tick for -3 actually appears if needed
+        self.graphWidget.plotItem.vb.setLimits(yMin=self.lower, yMax=self.upper)
+        self.graphWidget.plot() # update the plot with the new ylims
         
     def display_eve30(self):
         ''' Sets the ylimits for ESP 30 plot. If plot is in log mode, it moves to that. 
@@ -217,7 +345,8 @@ class RealTimeTrigger(QtWidgets.QWidget):
         xmin = pd.Timestamp(_now-timedelta(minutes=30)).timestamp()
         self.xmax = pd.Timestamp(_now).timestamp()
         _plot_offest = -60 #seconds, for some reason the plot extends by about this much :(
-        self.evegraph30.plotItem.setXRange(xmin, self.xmax + _plot_offest)
+        #self.evegraph30.plotItem.setXRange(xmin, self.xmax + _plot_offest)
+        self.graphWidget.plotItem.setXRange(xmin, self.xmax + _plot_offest)
         self.evegraph0diff.plotItem.setXRange(xmin, self.xmax + _plot_offest)
         self.xrsb_diff_graph.plotItem.setXRange(xmin, self.xmax + _plot_offest)
         self.xrsa_diff_graph.plotItem.setXRange(xmin, self.xmax + _plot_offest)
@@ -244,9 +373,15 @@ class RealTimeTrigger(QtWidgets.QWidget):
     def xrsaplot(self, x, y, color, plotname):
         pen = pg.mkPen(color=color, width=5)
         return self.xrsa_diff_graph.plot(x, y, name=plotname, pen=pen)
+    
+    def plot(self, x, y, color, plotname):
+        pen = pg.mkPen(color=color, width=5)
+        return self.graphWidget.plot(x, self._log_data(y), name=plotname, pen=pen) #, symbol="o", symbolSize=3)
         
     def load_data(self, reload=True, initial=False):
         self.goes_current = self.GOES_data(initial=initial)
+        self.current_time = list(self.goes_current["time_tag"])[-1]
+        self.current_realtime = self._get_datetime_now()
         self.calculate_xrs_diffs()
         if not reload:
             self.goes = self.goes_current
@@ -301,6 +436,8 @@ class RealTimeTrigger(QtWidgets.QWidget):
             # make sure the y-limits change with the plot if needed and alert that new data is added
             self.display_xrsb_diff()
             self.display_xrsa_diff()
+            self.display_goes()
+            self.value_changed_new_xrsb.emit()
             
     def calculate_xrs_diffs(self):
         for xrs in ['xrsa', 'xrsb']:
@@ -326,15 +463,31 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.load_data()
         self.check_for_new_data()
         if self.new_eve_data:
-            self.eve_plot_update()
+            #self.eve_plot_update()
             self.eve0diff_plot_update()
             self.save_data()
         if self.new_data:
             self.xrsb_diff_plot_update()
             self.xrsa_diff_plot_update()
+            self.xrs_plot_update()
         self.xlims()
         self.update()
         
+    def xrs_plot_update(self):
+        
+        if self.goes.shape[0]>70:
+            self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes.iloc[-70:]['time_tag']]
+            self.new_xrsa = np.array(self.goes.iloc[-70:]['xrsa'])
+            self.new_xrsb = np.array(self.goes.iloc[-70:]['xrsb'])
+        else: 
+            self.time_tags = [pd.Timestamp(date).timestamp() for date in self.goes['time_tag']]
+            self.new_xrsa = np.array(self.goes['xrsa'])
+            self.new_xrsb = np.array(self.goes['xrsb'])
+
+        self.display_goes()
+        self.xrsa_data.setData(self.time_tags, self._log_data(self.new_xrsa))
+        self.xrsb_data.setData(self.time_tags, self._log_data(self.new_xrsb))
+
     def xrsb_diff_plot_update(self):
         self.new_time_tags = [pd.Timestamp(date).timestamp() for date in self.goes['time_tag']]
         self.new_xrsb_diff = np.array(self.goes['xrsb_diff'])
