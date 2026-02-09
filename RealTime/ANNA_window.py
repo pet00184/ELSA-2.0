@@ -49,7 +49,7 @@ class main_window(QtWidgets.QWidget):
         """ Initialise a grid on a widget and add different iterations of the QTimeWidget widget. """
         QtWidgets.QWidget.__init__(self)
 
-        self.setWindowTitle("ANNA")
+        self.setWindowTitle("ANNA 2.0")
         self.setStyleSheet("border-width: 2px; border-style: outset; border-radius: 10px; border-color: white; background-color: white;")
         self.setMinimumSize(600,400)
 
