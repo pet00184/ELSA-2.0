@@ -60,8 +60,8 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.layout.addWidget(self.evegraph0diff, 1, 0, 1, 1)
         #self.layout.addWidget(self.evegraph30, 1, 1, 1, 1)
         self.layout.addWidget(self.graphWidget, 0, 0, 1, 1)
-        self.layout.addWidget(self.xrsa_diff_graph, 0, 1, 1, 1)
-        self.layout.addWidget(self.xrsb_diff_graph, 1, 1, 1, 1)
+        self.layout.addWidget(self.xrsa_diff_graph, 1, 1, 1, 1)
+        self.layout.addWidget(self.xrsb_diff_graph, 0, 1, 1, 1)
         self.setLayout(self.layout)
         
         # # Prepare XRS widget
