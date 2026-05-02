@@ -22,7 +22,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
 
     value_changed_new_xrsb = QtCore.pyqtSignal()
 
-    def __init__(self, goes_data, eve_data, foldername, parent=None):
+    def __init__(self, goes_data, eve_data, foldername, no_eve, parent=None):
         QtWidgets.QWidget.__init__(self,parent)
             
         if not os.path.exists(os.path.join(PACKAGE_DIR, "SessionSummaries_ANNAgui", foldername)):
@@ -33,18 +33,22 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.EVE_data = eve_data
         self.foldername = foldername
         self.eve_slow = True
+        self.no_eve = no_eve
+        print(self.no_eve)
         
         #initial loading of the data: 
         self.load_data(reload=False, initial=True)
-        self.load_eve_data(reload=False)
+        if self.no_eve==False:
+            self.load_eve_data(reload=False)
         self._logy = True
         #doing 1-min data:
-        if self.eve_slow:
-            self.eve_slow_current = self.eve_current.groupby(pd.Grouper(key='dt', freq='1min')).mean(numeric_only=True).reset_index()
-            eveslowdiff = np.array(self.eve_slow_current['ESP_0_7_COUNTS'])
-            eveslowdiff = eveslowdiff[1:] - eveslowdiff[:-1]
-            eveslowdiff_final = np.concatenate([np.full(1, math.nan), eveslowdiff]) #appending correct # of 0's to front
-            self.eve_slow_current['slow_diffs'] = eveslowdiff_final
+        if self.no_eve==False:
+            if self.eve_slow:
+                self.eve_slow_current = self.eve_current.groupby(pd.Grouper(key='dt', freq='1min')).mean(numeric_only=True).reset_index()
+                eveslowdiff = np.array(self.eve_slow_current['ESP_0_7_COUNTS'])
+                eveslowdiff = eveslowdiff[1:] - eveslowdiff[:-1]
+                eveslowdiff_final = np.concatenate([np.full(1, math.nan), eveslowdiff]) #appending correct # of 0's to front
+                self.eve_slow_current['slow_diffs'] = eveslowdiff_final
         
         #initial plotting of data: 
         #initializing plot: 
@@ -131,27 +135,29 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self._logy = True
         self._lowest_yrange, self._highest_yrange = -8*1.02, -3*0.96
         self.display_goes()
-        self.display_eve0diff()
+        if self.no_eve==False:
+            self.display_eve0diff()
         self.display_xrsb_diff()
         self.display_xrsa_diff()
         self.xlims()
             
         # #PLOTTING EVE:
-        self.evetime_tags = [pd.Timestamp(str(date)).timestamp() for date in self.eve['UTC_TIME']]
-        # self.eve30_data = self.eveplot30(self.evetime_tags, self.eve['ESP_30_COUNTS'], color='cyan', plotname='ESP 30 nm')
-        # self.eve_line = self.eveplot30([self.evetime_tags[0]]*2, [self.line_min_eve30, self.line_max_eve30], color='k', plotname=None)
-        # self.eve_line.setAlpha(0, False)
+        if self.no_eve==False:
+            self.evetime_tags = [pd.Timestamp(str(date)).timestamp() for date in self.eve['UTC_TIME']]
+            # self.eve30_data = self.eveplot30(self.evetime_tags, self.eve['ESP_30_COUNTS'], color='cyan', plotname='ESP 30 nm')
+            # self.eve_line = self.eveplot30([self.evetime_tags[0]]*2, [self.line_min_eve30, self.line_max_eve30], color='k', plotname=None)
+            # self.eve_line.setAlpha(0, False)
         
-        #PLOTTING EVE DIFF:
-        self.eve_ave_time_tags = [pd.Timestamp(str(date)).timestamp() for date in self.eve_ave['dt']]
-        self.eve0diff_data = self.eveplot0diff(self.eve_ave_time_tags, self.eve_ave['ESP_0_7_DIFFS'], color='gray', plotname='10s Differences', w=3)
-        self.eve0diff_line = self.eveplot0diff([self.eve_ave_time_tags[0]]*2, [self.line_min_eve0diff, self.line_max_eve0diff], color='k', plotname=None, w=3)
-        self.eve0diff_line.setAlpha(0, False)
-        if self.eve_slow:
-            self.eve_slow_time_tags = [pd.Timestamp(str(date)).timestamp() for date in self.eve_slow_current['dt']]
-            self.eve_slow_diff_data = self.eveplot0diff(self.eve_slow_time_tags, self.eve_slow_current['slow_diffs'], color='m', plotname='1-min Differences', w=5)
-        #add 0 line:
-        self.line0 = self.evegraph0diff.plot([self.eve_ave_time_tags[0], self.xmax], [0, 0], pen=pg.mkPen('k', width=3, style=QtCore.Qt.PenStyle.DashLine))
+            #PLOTTING EVE DIFF:
+            self.eve_ave_time_tags = [pd.Timestamp(str(date)).timestamp() for date in self.eve_ave['dt']]
+            self.eve0diff_data = self.eveplot0diff(self.eve_ave_time_tags, self.eve_ave['ESP_0_7_DIFFS'], color='gray', plotname='10s Differences', w=3)
+            self.eve0diff_line = self.eveplot0diff([self.eve_ave_time_tags[0]]*2, [self.line_min_eve0diff, self.line_max_eve0diff], color='k', plotname=None, w=3)
+            self.eve0diff_line.setAlpha(0, False)
+            if self.eve_slow:
+                self.eve_slow_time_tags = [pd.Timestamp(str(date)).timestamp() for date in self.eve_slow_current['dt']]
+                self.eve_slow_diff_data = self.eveplot0diff(self.eve_slow_time_tags, self.eve_slow_current['slow_diffs'], color='m', plotname='1-min Differences', w=5)
+            #add 0 line:
+            self.line0 = self.evegraph0diff.plot([self.eve_ave_time_tags[0], self.xmax], [0, 0], pen=pg.mkPen('k', width=3, style=QtCore.Qt.PenStyle.DashLine))
         
         #PLOTTING XRSB DIFF:
         self.time_tags = [pd.Timestamp(str(date)).timestamp() for date in self.goes['time_tag']]
@@ -458,14 +464,16 @@ class RealTimeTrigger(QtWidgets.QWidget):
         return datetime.now(timezone.utc)
             
     def _update(self):
-        self.load_eve_data()
-        self.check_for_new_eve_data()
+        if self.no_eve==False:
+            self.load_eve_data()
+            self.check_for_new_eve_data()
         self.load_data()
         self.check_for_new_data()
-        if self.new_eve_data:
-            #self.eve_plot_update()
-            self.eve0diff_plot_update()
-            self.save_data()
+        if self.no_eve==False:
+            if self.new_eve_data:
+                #self.eve_plot_update()
+                self.eve0diff_plot_update()
+                self.save_data()
         if self.new_data:
             self.xrsb_diff_plot_update()
             self.xrsa_diff_plot_update()
@@ -535,6 +543,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
 
         
     def save_data(self):
-        self.eve.to_csv(os.path.join(PACKAGE_DIR, "SessionSummaries_ANNAgui", self.foldername, "EVE.csv"))
-        self.eve_ave.to_csv(os.path.join(PACKAGE_DIR, "SessionSummaries_ANNAgui", self.foldername, "EVE_ave.csv"))
+        if self.no_eve==False:
+            self.eve.to_csv(os.path.join(PACKAGE_DIR, "SessionSummaries_ANNAgui", self.foldername, "EVE.csv"))
+            self.eve_ave.to_csv(os.path.join(PACKAGE_DIR, "SessionSummaries_ANNAgui", self.foldername, "EVE_ave.csv"))
         self.goes.to_csv(os.path.join(PACKAGE_DIR, "SessionSummaries_ANNAgui", self.foldername, "GOES.csv"))

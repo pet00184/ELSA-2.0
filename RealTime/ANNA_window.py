@@ -47,9 +47,11 @@ class main_window(QtWidgets.QWidget):
     post_analysis(utc_time_here)
     """
 
-    def __init__(self):
+    def __init__(self, no_eve=False):
         """ Initialise a grid on a widget and add different iterations of the QTimeWidget widget. """
         QtWidgets.QWidget.__init__(self)
+        
+        self.no_eve=no_eve
 
         self.setWindowTitle("ANNA 2.0")
         self.setStyleSheet("border-width: 2px; border-style: outset; border-radius: 10px; border-color: white; background-color: white;")
@@ -73,7 +75,7 @@ class main_window(QtWidgets.QWidget):
         _time_layout.addWidget(times) # widget, -y, x
 
         # setup the main plot and add to the layout
-        self.plot = rft.RealTimeTrigger(self.data_source()[0], self.data_source()[1], _utc_folder)
+        self.plot = rft.RealTimeTrigger(self.data_source(no_eve=self.no_eve)[0], self.data_source(no_eve=self.no_eve)[1], _utc_folder, self.no_eve)
         plot_layout.addWidget(self.plot) # widget, -y, x
         
         # create time widget and add it to the appropriate layout
@@ -134,7 +136,10 @@ class main_window(QtWidgets.QWidget):
 
     def data_source(self, no_eve=False):
         """ Return GOES and EOVSA realtime data sources. """
-        return GOES_data.load_new_realtime_XRS, EVE_data.load_realtime_EVE
+        if no_eve:
+            return GOES_data.load_new_realtime_XRS, None
+        else:
+            return GOES_data.load_new_realtime_XRS, EVE_data.load_realtime_EVE
     
     def layout_bkg(self, main_layout, panel_name, style_sheet_string, grid=False):
             """ Adds a background widget (panel) to a main layout so border, colours, etc. can be controlled. """
@@ -206,8 +211,12 @@ if __name__=="__main__":
 
     sound_file = os.path.dirname(__file__) + '/'
     app = QtWidgets.QApplication([])
-    print("Starting ANNA GUI!")
-    window = main_window()
+    if (len(sys.argv)==2) and (sys.argv[1]=="goes_only"):
+        print("Starting ANNA GUI! with NO EVE!!!!!")
+        window = main_window(no_eve=True)
+    else:
+        print("Starting ANNA GUI!")
+        window = main_window()
     
     window.show()
     app.exec()
