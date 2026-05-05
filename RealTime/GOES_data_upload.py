@@ -123,11 +123,12 @@ def process_irradiance_all_files(ifns, max_workers=4):
 #         print(f"Likely GOES download error from `wget`:\n{e}")
 #         return load_new_realtime_XRS()
     
-def load_new_realtime_XRS(nfiles=5, median=True, max_workers=4, initial=False):
+def load_new_realtime_XRS(nfiles=5, median=True, max_workers=4, initial=False, sat_pos='west'):
     """
     initial=True → do large download (~65 files)
     otherwise → small incremental update (~5 files)
     """
+    print("[Debugging] In GOES_data_upload, sat_pos is ", sat_pos)
     try:
         base_cat_url = (
             "https://thredds-test.unidata.ucar.edu/thredds/catalog/"
@@ -135,7 +136,8 @@ def load_new_realtime_XRS(nfiles=5, median=True, max_workers=4, initial=False):
         )
 
         cat_url = base_cat_url.format(
-            satellite='goes', sat_pos='west', platform='grb',
+#            satellite='goes', sat_pos='west', platform='grb',
+            satellite='goes', sat_pos=sat_pos, platform='grb',
             dataset='EXIS', product='SFXR', date='current'
         )
         out_dir = os.path.join(os.getcwd(), "goes_cache")
