@@ -47,11 +47,12 @@ class main_window(QtWidgets.QWidget):
     post_analysis(utc_time_here)
     """
 
-    def __init__(self, no_eve=False):
+    def __init__(self, no_eve=False, sat_pos='west'):
         """ Initialise a grid on a widget and add different iterations of the QTimeWidget widget. """
         QtWidgets.QWidget.__init__(self)
         
         self.no_eve=no_eve
+        self.sat_pos=sat_pos
 
         self.setWindowTitle("ANNA 2.0")
         self.setStyleSheet("border-width: 2px; border-style: outset; border-radius: 10px; border-color: white; background-color: white;")
@@ -74,8 +75,9 @@ class main_window(QtWidgets.QWidget):
         self.panels["panel_time"].setMinimumSize(265,10) # stops the panel from stretching and squeezing when changing times
         _time_layout.addWidget(times) # widget, -y, x
 
+        print("In call to RealTimeTrigger, sat_pos=",self.sat_pos)
         # setup the main plot and add to the layout
-        self.plot = rft.RealTimeTrigger(self.data_source(no_eve=self.no_eve)[0], self.data_source(no_eve=self.no_eve)[1], _utc_folder, self.no_eve)
+        self.plot = rft.RealTimeTrigger(self.data_source(no_eve=self.no_eve, sat_pos=self.sat_pos)[0], self.data_source(no_eve=self.no_eve, sat_pos=self.sat_pos)[1], _utc_folder, self.no_eve, self.sat_pos)
         plot_layout.addWidget(self.plot) # widget, -y, x
         
         # create time widget and add it to the appropriate layout
@@ -134,8 +136,8 @@ class main_window(QtWidgets.QWidget):
         _time_strings = self._goes_time_strings()
         self.goes_values_window.update_labels(self.plot.goes['xrsb'][-self.goes_values_window.number_of_vals:], _time_strings)
 
-    def data_source(self, no_eve=False):
-        """ Return GOES and EOVSA realtime data sources. """
+    def data_source(self, no_eve=False, sat_pos='west'):
+        """ Return GOES and EVE realtime data sources. """
         if no_eve:
             return GOES_data.load_new_realtime_XRS, None
         else:
@@ -211,13 +213,37 @@ if __name__=="__main__":
 
     sound_file = os.path.dirname(__file__) + '/'
     app = QtWidgets.QApplication([])
-    if (len(sys.argv)==2) and (sys.argv[1]=="goes_only"):
-        print("Starting ANNA GUI! with NO EVE!!!!!")
-        window = main_window(no_eve=True)
+#    if (len(sys.argv)==2) and (sys.argv[1]=="goes_only"):
+#        print("Starting ANNA GUI! with NO EVE!!!!!")
+#        window = main_window(no_eve=True)
+#    else:
+#        print("Starting ANNA GUI!")
+#        window = main_window()
+
+    no_eve=None
+    sat_pos="west"
+
+    if (sys.argv[1]=="goes_only"):
+        no_eve=True
+        print("No EVE data")
+    elif (sys.argv[1]=="include_eve"):
+        no_eve=False
+        print("Including EVE data")
     else:
-        print("Starting ANNA GUI!")
-        window = main_window()
+        print("First argument needs to be goes_only or include_eve.")
+    if (len(sys.argv)==3):
+        if (sys.argv[2]=="east"):
+            sat_pos="east"
+            print("Using GOES EAST spacecraft")
+    else:
+        sat_pos="west"
+        print("Using Default GOES WEST spacecraft")
     
+    if (no_eve is not None and sat_pos is not None):
+        print("Starting ANNA GUI!")
+        print(no_eve, sat_pos)
+        window = main_window(no_eve=no_eve, sat_pos=sat_pos)
+
     window.show()
     app.exec()
     for filename in glob.glob('flaretest*'):

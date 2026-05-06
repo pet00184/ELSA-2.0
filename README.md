@@ -90,13 +90,17 @@ Before launching ELSA and ANNA, perform a `git stash` (in case you have data fro
 
  	This will use the additional trigger condition currently being tested, which will show up less frequently than the usual trigger but have higher chances of catching the impulsive phase.
 
-3. To run ELSA's complimentary GUI (named ANNA), run the following:
+3. To run ELSA's complementary GUI (named ANNA), run the following:
 
- 	* `python3 .../flarepred/RealTime/ANNA_window.py`
+ 	* `python3 .../flarepred/RealTime/ANNA_window.py <eve_option> <goes_choice>`
 
- 	This window includes complimentary plots that are not essential to the trigger, such as EOVSA data, EVE 30nm data, and running differences of XRSB and EVE.
+ 	This window includes complementary plots that are not essential to the trigger, such as EOVSA data, EVE 30nm data, and running differences of XRSB and EVE.
 
 See the [RealTime module](https://github.com/pet00184/flarepred/tree/main/RealTime) for a more detailed description on ELSA and ANNA.
+
+In this version of ANNA 2.0, modified during the 2026 flare campaign, there are a few extra options for ANNA:
+1. The first argument <eve_option> is mandatory and should be either `goes_only' or `include_eve'. This determines whether EVE/ESP data are included. Sometimes EVE data access slows down the system, in which case you can run ANNA without EVE.
+2. The second argument <goes_choice> is optional and can be either `east' or `west' to specify the choice of GOES spacecraft (primary or secondary). The default is west, so choose east if you want to switch. (Since the default is west, inputting `west' doesn't actually do anything.)
 
 ### 4. At the end
 

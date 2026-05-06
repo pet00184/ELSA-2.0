@@ -22,7 +22,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
 
     value_changed_new_xrsb = QtCore.pyqtSignal()
 
-    def __init__(self, goes_data, eve_data, foldername, no_eve, parent=None):
+    def __init__(self, goes_data, eve_data, foldername, no_eve, sat_pos, parent=None):
         QtWidgets.QWidget.__init__(self,parent)
             
         if not os.path.exists(os.path.join(PACKAGE_DIR, "SessionSummaries_ANNAgui", foldername)):
@@ -34,6 +34,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
         self.foldername = foldername
         self.eve_slow = True
         self.no_eve = no_eve
+        self.sat_pos = sat_pos
         print(self.no_eve)
         
         #initial loading of the data: 
@@ -384,8 +385,8 @@ class RealTimeTrigger(QtWidgets.QWidget):
         pen = pg.mkPen(color=color, width=5)
         return self.graphWidget.plot(x, self._log_data(y), name=plotname, pen=pen) #, symbol="o", symbolSize=3)
         
-    def load_data(self, reload=True, initial=False):
-        self.goes_current = self.GOES_data(initial=initial)
+    def load_data(self, reload=True, initial=False, sat_pos='west'):
+        self.goes_current = self.GOES_data(initial=initial, sat_pos=sat_pos)
         self.current_time = list(self.goes_current["time_tag"])[-1]
         self.current_realtime = self._get_datetime_now()
         self.calculate_xrs_diffs()
@@ -467,7 +468,7 @@ class RealTimeTrigger(QtWidgets.QWidget):
         if self.no_eve==False:
             self.load_eve_data()
             self.check_for_new_eve_data()
-        self.load_data()
+        self.load_data(sat_pos=self.sat_pos)
         self.check_for_new_data()
         if self.no_eve==False:
             if self.new_eve_data:
